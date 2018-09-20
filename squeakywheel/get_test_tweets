@@ -8,13 +8,6 @@ Created on Tue Sep 18 15:51:29 2018
 
 
 
-import tweepy
-import pandas as pd
-import numpy as np
-from connections import twitterapi, postgresconnect
-import pickle
-
-
 def RetrieveTweets(searchQuery,dataframe,maxTweets=10000):
     # the below code draws from 
     # https://stackoverflow.com/questions/38555191/get-all-twitter-mentions-using-tweepy-for-users-with-millions-of-followers
@@ -74,34 +67,37 @@ def RetrieveTweets(searchQuery,dataframe,maxTweets=10000):
     picklefile.close()
     return tweetCount
 
-maxtweets = 250
-atuser = '@Starbucks'
-import time
-retweet_filter='-filter:retweets'
-reply_filter = '-filter:replies'
-searchQuery = atuser+' AND '+retweet_filter+' AND '+reply_filter# + 'AND until:2018-09-11'
-print(searchQuery)
-#storagefile = type+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
-storagefile = 'Starbuckstestfile.dat'
-tweetCount = RetrieveTweets(searchQuery,storagefile,maxtweets)
-maxtweets = tweetCount
-#import shutil
-#shutil.copy(storagefile,type+'tweets.dat')
-
-testpickle = open('Starbuckstestfile.dat','rb')
-testtweets = pickle.load(testpickle)
-testpickle.close()
-testfilename = 'test_tweets.txt'
-columns=['text','mentions','choose_one','class_label']
-testframe = pd.DataFrame(columns=columns,index=range(len(testtweets)))
-i = 0
-
-for tweet in testtweets:
-    tweettext = tweet['full_text']
-    testframe.at[i,'text']=tweettext
-    testframe.at[i,'mentions'] = tweet['entities']['user_mentions']
-    testframe.at[i,'choose_one']=''
-    testframe.at[i,'class_label']=2
-    i+=1
+def GetTestSet(atuser,maxtweets):
+    maxtweets = 250
+    if not atuser[0]=='@':
+        atuser = '@'+ atuser
+    import time
+    retweet_filter='-filter:retweets'
+    reply_filter = '-filter:replies'
+    searchQuery = atuser+' AND '+retweet_filter+' AND '+reply_filter# + 'AND until:2018-09-11'
+    print(searchQuery)
+    #storagefile = type+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+    storagefile = 'testtweetfile.dat'
+    tweetCount = RetrieveTweets(searchQuery,storagefile,maxtweets)
+    maxtweets = tweetCount
+    #import shutil
+    #shutil.copy(storagefile,type+'tweets.dat')
     
-testframe.to_csv('test_tweets.csv')
+    testpickle = open('testtweetfile.dat','rb')
+    testtweets = pickle.load(testpickle)
+    testpickle.close()
+    testfilename = 'test_tweets.txt'
+    columns=['text','mentions','choose_one','class_label']
+    testframe = pd.DataFrame(columns=columns,index=range(len(testtweets)))
+    i = 0
+    
+    for tweet in testtweets:
+        tweettext = tweet['full_text']
+        testframe.at[i,'text']=tweettext
+        testframe.at[i,'mentions'] = tweet['entities']['user_mentions']
+        testframe.at[i,'choose_one']=''
+        testframe.at[i,'class_label']=2
+        i+=1
+    csv_name = 'test_tweets.csv'
+    testframe.to_csv(csv_name)
+    return csv_name

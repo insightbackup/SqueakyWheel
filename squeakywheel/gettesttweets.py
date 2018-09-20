@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 18 10:14:39 2018
+Created on Tue Sep 18 15:51:29 2018
 
 @author: rcarns
 """
 
-def RetrieveTweets(searchQuery,dataframe,maxTweets=10000):
+
+
+def RetrieveTweets(searchQuery,storagefile,maxTweets=10000):
     # the below code draws from 
     # https://stackoverflow.com/questions/38555191/get-all-twitter-mentions-using-tweepy-for-users-with-millions-of-followers
 
@@ -64,71 +66,38 @@ def RetrieveTweets(searchQuery,dataframe,maxTweets=10000):
     pickle.dump(list_of_tweets,picklefile)
     picklefile.close()
     return tweetCount
-    
-import tweepy
-import pandas as pd
-import numpy as np
-import pickle
-from connections import twitterapi, postgresconnect
 
-# check how many searches are left in this time window
-check = api.rate_limit_status()
-reset_time = check['resources']['search']['/search/tweets']['reset']
-import datetime
-reset_formatted = datetime.datetime.fromtimestamp(reset_time).strftime('%X')
-print(reset_formatted)
-print(check['resources']['search'])
-
-# get names of corporate twitters
-CorpTwitters = pd.read_csv('CorpTwittersAll.txt',names=['Main','Support','Sector'])
-#CorpTwitters = CorpTwitters[CorpTwitters['Sector']=='retail']
-ComplaintAccounts = CorpTwitters['Support'].apply(lambda x: x[1:].lower())
-MainAccounts = CorpTwitters['Main'].apply(lambda x: x[1:].lower())
-maxtweets = 10000
-for account in ComplaintAccounts:'
-    type = 'complaint'
-    atuser = '@'+account
+def GetTestSet(atuser,maxtweets):
+    maxtweets = 250
+    if not atuser[0]=='@':
+        atuser = '@'+ atuser
     import time
     retweet_filter='-filter:retweets'
     reply_filter = '-filter:replies'
     searchQuery = atuser+' AND '+retweet_filter+' AND '+reply_filter# + 'AND until:2018-09-11'
-    storagefile = type+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+    print(searchQuery)
+    #storagefile = type+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+    storagefile = 'testtweetfile.dat'
     tweetCount = RetrieveTweets(searchQuery,storagefile,maxtweets)
     maxtweets = tweetCount
-    import shutil
-    shutil.copy(storagefile,type+'tweets.dat')
-
-for account in ComplaintAccounts:
-    type = 'neutral'
-    atuser = '@'+account
-    import time
-    retweet_filter='-filter:retweets'
-    reply_filter = '-filter:replies'
-    searchQuery = atuser+' AND '+retweet_filter+' AND '+reply_filter# + 'AND until:2018-09-11'
-    storagefile = type+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
-    tweetCount = RetrieveTweets(searchQuery,storagefile,maxtweets)
-    #maxtweets = tweetCount
-    import shutil
-    shutil.copy(storagefile,type+'tweets.dat')
+    #import shutil
+    #shutil.copy(storagefile,type+'tweets.dat')
     
-#for type in ['complaint','neutral']:
-#    if type=='complaint':
-#        atuser = '@'+' OR @'.join(ComplaintAccounts)
-#        print(atuser)
-#    elif type=='neutral':
-#        atuser = '@'+' OR @'.join(MainAccounts)
-#        print(atuser)
-#
-#    import time
-#    retweet_filter='-filter:retweets'
-#    reply_filter = '-filter:replies'
-#    searchQuery = atuser+' AND '+retweet_filter+' AND '+reply_filter# + 'AND until:2018-09-11'
-#    storagefile = type+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
-#    tweetCount = RetrieveTweets(searchQuery,storagefile,maxtweets)
-#    maxtweets = tweetCount
-#    import shutil
-#    shutil.copy(storagefile,type+'tweets.dat')
-
-
-
-                
+    testpickle = open('testtweetfile.dat','rb')
+    testtweets = pickle.load(testpickle)
+    testpickle.close()
+    testfilename = 'test_tweets.txt'
+    columns=['text','mentions','choose_one','class_label']
+    testframe = pd.DataFrame(columns=columns,index=range(len(testtweets)))
+    i = 0
+    
+    for tweet in testtweets:
+        tweettext = tweet['full_text']
+        testframe.at[i,'text']=tweettext
+        testframe.at[i,'mentions'] = tweet['entities']['user_mentions']
+        testframe.at[i,'choose_one']=''
+        testframe.at[i,'class_label']=2
+        i+=1
+    csv_name = 'test_tweets.csv'
+    testframe.to_csv(csv_name)
+    return csv_name

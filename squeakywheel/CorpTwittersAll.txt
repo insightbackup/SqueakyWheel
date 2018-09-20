@@ -15,10 +15,10 @@
 @Visa,@AskVisa,finance
 @Spotify,@SpotifyCares,web
 @Dropbox,@DropboxSupport,web
-@Ford, @FordService, auto
-@Honda, @HondaCustSvc, auto
-@Nike, @NikeSupport, retail
-@Steam_games, @SteamSupport,web
+@Ford,@FordService,auto
+@Honda,@HondaCustSvc,auto
+@Nike,@NikeSupport,retail
+@Steam_games,@SteamSupport,web
 @Verizon,@VZWSupport,mobile
 @Tmobile,@TmobileHelp,mobile
 @ATT,@ATTCares,mobile
