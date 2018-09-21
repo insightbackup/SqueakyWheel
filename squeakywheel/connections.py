@@ -23,11 +23,15 @@ def twitterapi():
     return api
 
 def postgresconnect(db_name):
+    from sqlalchemy import create_engine
+    from sqlalchemy_utils import database_exists, create_database
+    import psycopg2
+    import pandas as pd
     username = 'postgres'
     password = 'fish'     # change this
     host     = 'localhost'
     port     = '5432'            # default port that postgres listens on
-    db_name  = 'tweetdata'
+    #db_name  = 'tweetdata'
 
     engine = create_engine( 'postgresql://{}:{}@{}:{}/{}'.format(username, password, host, port, db_name) )
     print(engine.url)
@@ -68,7 +72,10 @@ def GetTestSet(atuser,maxtweets):
     for tweet in testtweets:
         tweettext = tweet['full_text']
         testframe.at[i,'text']=tweettext
+        testframe.at[i,'id'] = tweet['id_str']
         testframe.at[i,'mentions'] = tweet['entities']['user_mentions']
+        testframe.at[i,'username'] = tweet['user']['screen_name']
+        testframe.at[i,'created_at'] = tweet['created_at']
         testframe.at[i,'choose_one']=''
         testframe.at[i,'class_label']=2
         i+=1
@@ -187,6 +194,10 @@ def RetrieveSingleAccountTweetsWithJson(api,accountname,isSupport,maxTweets=1000
                         list_of_tweets.append(tweet._json)
                         tweetdict = {}
                         tweetdict['json'] = tweetson
+                        tweetdict['id'] = tweetson['id_str']
+                        tweetdict['mentions'] = tweetson['entities']['user_mentions']
+                        tweetdict['username'] = tweetson['user']['screen_name']
+                        tweetdict['created_at'] = tweetson['created_at']
                         tweetdict['text'] = tweetson['full_text']
                         tweetdict['mentions'] = tweetson['entities']['user_mentions']
                         tweetdict['source'] = accountname
@@ -223,3 +234,18 @@ def RunModel(tweetframe):
     list_vectors = vectorizer.transform(list_corpus)
     predictions = myclf.predict(list_vectors)
     return predictions
+
+def ExplainTweet(tweet):
+    import pickle
+    import os
+    from lime import lime_text
+    from sklearn.pipeline import make_pipeline
+    os.chdir('/home/rcarns/flaskapps/squeakywheel/')
+    class_names = ['complaint','neutral']
+    modelpickle = open('model.pkl','rb')
+    [myclf,vectorizer] = pickle.load(modelpickle)
+    c = make_pipeline(vectorizer, rf)
+    from lime.lime_text import LimeTextExplainer
+    explainer = LimeTextExplainer(class_names=class_names)
+    exp = explainer.explain_instance(tweet, c.predict, num_features=6)
+    print(exp.as_list())

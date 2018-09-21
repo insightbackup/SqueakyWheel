@@ -59,15 +59,22 @@ def squeaky_output():
   tweetcount = 300
   tweetlist, tweetcount = connections.RetrieveSingleAccountTweetsWithJson(api,twitter_account,False,tweetcount)
   tf = pd.DataFrame(tweetlist)
-  print('columns'+tf.columns)
+  #print('columns'+tf.columns)
   predictions = connections.RunModel(tf)
   tf['predictions'] = predictions
   numcomplaints = tf[tf['predictions']==1]['predictions'].count()
-  tweettext = tf[tf['predictions']==1]['text']
-  birth = []
+  tweetjson = tf[tf['predictions']==1]['json'].tolist()
+
+  engine,con = connections.postgresconnect('tweetdata')
+  tf_lite = tf.drop(['json','mentions'],1)
+  tf_lite.to_sql('test_tweets',engine,if_exists='replace')
+
+
   #for i in range(0,query_results.shape[0]):
 	  #births.append(dict(index=query_results.iloc[i]['index'], attendant=query_results.iloc[i]['attendant'], birth_month=query_results.iloc[i]['birth_month']))
       #births.append(dict(index=query_results.iloc[i]['index'], attendant=query_results.iloc[i]['attendant'], birth_month=query_results.iloc[i]['birth_month']))
       #the_result = ModelIt(patient,births)
       #the_result = ''
-  return render_template("squeakyoutput.html", numcomplaints = numcomplaints,birth=birth,tweettext=tweettext,tweetcount=tweetcount)
+  return render_template("squeakyoutput.html", numcomplaints = numcomplaints,tweettext=tweetjson,tweetcount=tweetcount)
+  #@app.route('/explainer')
+  #def explain_this():
