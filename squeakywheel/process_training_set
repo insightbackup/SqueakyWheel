@@ -16,7 +16,7 @@ from connections import twitterapi, postgresconnect
 CorpTwitters = pd.read_csv('CorpTwittersAll.txt',names=['Main','Support','Sector'])
 ComplaintAccounts = CorpTwitters['Support'].apply(lambda x: x[1:].lower())
 MainAccounts = CorpTwitters['Main'].apply(lambda x: x[1:].lower())
-
+'''
 # open file with stored tweets and read into dataframe
 complaintpickle = open('complainttweets.dat','rb')
 complaintweets = pickle.load(complaintpickle)
@@ -41,7 +41,7 @@ neutralfilename = 'neutraltweets.txt'
 neutralframe = pd.DataFrame(columns=columns,index=range(len(neutraltweets)))
 i=0
 #with open(neutralfilename,'w') as neutralfile:
-    for tweet in neutraltweets:
+for tweet in neutraltweets:
         isComplaint=False
         for mention in tweet['entities']['user_mentions']:
             if mention['screen_name'].lower() in ComplaintAccounts:
@@ -54,12 +54,33 @@ i=0
             neutralframe.at[i,'class_label']=0
             
             i+=1
+'''
+# get latest complaint tweet file
+import glob
+import os
+complaintfilelist = glob.glob("./complaint*")
+latest_complaint_file = max(complaintfilelist, key=os.path.getctime)
+
+with open (latest_complaint_file,'rb') as picklefile:
+    complaintframe = pickle.load(picklefile)
+    
+neutralfilelist = glob.glob("./neutral*")
+latest_neutral_file = max(neutralfilelist, key=os.path.getctime)
+with open(latest_neutral_file,'rb') as picklefile:
+    neutralframe = pickle.load(picklefile)
+
+
 
 def clean_text(df,text_field):     
-    # taken from 'How to Solve 90% of NLP Problems'      
+    # taken from 'How to Solve 90% of NLP Problems' 
+    # remove links     
     df[text_field] = df[text_field].str.replace(r"http\S+", "")
     df[text_field] = df[text_field].str.replace(r"http", "")
+    # remove @ mentions
     df[text_field] = df[text_field].str.replace(r"@\S+", "")
+    #remove hashtags
+    df[text_field] = df[text_field].str.replace(r"#\S+", "")
+    #remove weird characters
     df[text_field] = df[text_field].str.replace(r"[^A-Za-z0-9(),!?@\'\`\"\_\n\(\)]", " ")
     df[text_field] = df[text_field].str.replace(r"@", "at")
     df[text_field] = df[text_field].str.lower()

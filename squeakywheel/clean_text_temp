@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Sep 20 19:17:50 2018
+
+@author: rcarns
+"""
+
+def clean_text(df,text_field):     
+    # taken from 'How to Solve 90% of NLP Problems'     
+    #df = df[df[text_field].str.contains('\?')==False]
+    df[text_field] = df[text_field].str.replace(r"http\S+", "")
+    df[text_field] = df[text_field].str.replace(r"http", "")
+    df[text_field] = df[text_field].str.replace(r"@\S+", "")
+    df[text_field] = df[text_field].str.replace(r"[^A-Za-z0-9(),!?@\'\`\"\_\n\(\)]", " ")
+    df[text_field] = df[text_field].str.replace(r"@", "at")
+    df[text_field] = df[text_field].str.lower()
+    df = df.fillna('')
+    return df
+
+complaintframe = pd.DataFrame(complaintlist)
+neutralframe = pd.DataFrame(neutrallist)
+
+train_tweets = pd.read_csv('raw_train_tweets.csv')
+#train_tweets = pd.concat([complaintframe,neutralframe],0)
+#train_tweets.to_csv('raw_train_tweets.csv')
+train_tweets = train_tweets.reset_index(drop=True)
+train_tweets = clean_text(train_tweets,'text')
+train_tweets = train_tweets.dropna('rows','any')
+train_tweets.to_csv('train_tweets.csv')

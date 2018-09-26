@@ -68,9 +68,14 @@ def RetrieveTweets(searchQuery,dataframe,maxTweets=10000):
     return tweetCount
 
 def GetTestSet(atuser,maxtweets):
+    import pickle
     maxtweets = 250
     if not atuser[0]=='@':
+        username = atuser
         atuser = '@'+ atuser
+    elif atuser[0]=='@':
+        username = atuser[1:]
+
     import time
     retweet_filter='-filter:retweets'
     reply_filter = '-filter:replies'
@@ -83,10 +88,10 @@ def GetTestSet(atuser,maxtweets):
     #import shutil
     #shutil.copy(storagefile,type+'tweets.dat')
     
-    testpickle = open('testtweetfile.dat','rb')
-    testtweets = pickle.load(testpickle)
-    testpickle.close()
-    testfilename = 'test_tweets.txt'
+    with open(username+'tweetfile.dat','rb') as testpickle:
+        testtweets = pickle.load(testpickle)
+
+    testfilename = username+'_tweets.csv'
     columns=['text','mentions','choose_one','class_label']
     testframe = pd.DataFrame(columns=columns,index=range(len(testtweets)))
     i = 0
@@ -98,6 +103,6 @@ def GetTestSet(atuser,maxtweets):
         testframe.at[i,'choose_one']=''
         testframe.at[i,'class_label']=2
         i+=1
-    csv_name = 'test_tweets.csv'
-    testframe.to_csv(csv_name)
+
+    testframe.to_csv(testfilename)
     return csv_name

@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 24 15:25:02 2018
+
+@author: rcarns
+"""
+
+import keras
+import nltk
+import pandas as pd
+import numpy as np
+import re
+import codecs
+import textblob
+
+# Gensim
+import gensim
+import gensim.corpora as corpora
+from gensim.utils import simple_preprocess
+from gensim.models import CoherenceModel
+
+
+import warnings
+warnings.filterwarnings("ignore",category=DeprecationWarning)
+warnings.filterwarnings("ignore",category=UserWarning)
+
+
+train_tweets = pd.read_csv('train_tweets.csv')
+
+train_tweets = (train_tweets.drop_duplicates(subset='text'))
+apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+
+from nltk.tokenize import RegexpTokenizer
+
+
+
+    
+
+tokenizer = RegexpTokenizer(r'\w+')
+train_tweets.loc[:,"tokens"] = train_tweets.loc[:,"text"].apply(tokenizer.tokenize)
+
+data_words = train_tweets['tokens'][:]
+
+
+# Build the bigram and trigram models
+bigram = gensim.models.Phrases(data_words, min_count=5, threshold=5) # higher threshold fewer phrases.
+trigram = gensim.models.Phrases(bigram[data_words], threshold=5)  
+
+# Faster way to get a sentence clubbed as a trigram/bigram
+bigram_mod = gensim.models.phrases.Phraser(bigram)
+trigram_mod = gensim.models.phrases.Phraser(trigram)
+
+# See trigram example
+print(trigram_mod[bigram_mod[data_words[0:10]]])
+
+def make_bigrams(texts):
+    return [bigram_mod[doc] for doc in texts]
+
+def make_trigrams(texts):
+    return [trigram_mod[bigram_mod[doc]] for doc in texts]
+
+train_tweets['tokens'] = trigram_mod[bigram_mod[train_tweets['tokens']]]
+
+train_tweets['tokens'][:10]
+train_tweets['trigram_text'] = train_tweets['tokens'].apply(' '.join)
+train_tweets['trigram_text'][:10]
+
+# Import stopwords with scikit-learn
+from sklearn.feature_extraction import text
+stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s'])
+train_tweets['trigram_text'] = train_tweets['trigram_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+
+# randomize training and test corps
+CorpTwitters = pd.read_csv('CorpTwittersAll.csv',names=['Main','Support','Sector'])
+#ComplaintAccounts = CorpTwitters['Support'].apply(lambda x: x[1:].lower())
+#MainAccounts = CorpTwitters['Main'].apply(lambda x: x[1:].lower())
+CorpTwitters = CorpTwitters.iloc[:-1,:]
+CorpTwitters['Main'] = CorpTwitters['Main'].str.lower()
+CorpTwitters['Support'] = CorpTwitters['Support'].str.lower()
+import random
+ntests = len(CorpTwitters)//4
+ntrain = len(CorpTwitters)-ntests
+randdex = random.sample(range(len(CorpTwitters)),ntests)
+CorpArray = np.array(CorpTwitters)
+TestTwitters = CorpArray[randdex,:]
+TestTwitters = np.reshape(TestTwitters[:,:2],ntests*2)
+mask = np.ones(len(CorpArray), dtype=bool)
+mask[randdex] = False
+TrainTwitters = CorpArray[mask,:]
+TrainTwitters = np.reshape(TrainTwitters[:,:2],ntrain*2)
+
+print(TestTwitters)
+print(TrainTwitters)
+#print(train_tweets['source'].unique())
+
+#clean_questions = pd.read_csv('clean_questions.csv')
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+
+
+# the \ ? in the string replace accounts for a typo in the list of corps
+train_tweets['source'] = train_tweets['source'].str.replace('@\ ?@','@')
+train_tweets = train_tweets.dropna('rows','any')
+
+
+def train_vectorize(tweetframe):
+    tweet_corpus = train_tweets["trigram_text"].tolist()
+    tfidf_vectorizer = TfidfVectorizer(token_pattern=r"(?u)\S\S+")
+    tfidf_vectorizer.fit(tweet_corpus)
+
+    return tfidf_vectorizer
+
+def get_xy(subframe,vectorizer):
+    X = vectorizer.transform(subframe['trigram_text'].tolist())
+    y = subframe['class_label'].tolist()
+    return X,y
+
+tfidf_vectorizer = train_vectorize(train_tweets)
+
+test_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TestTwitters)]
+train_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TrainTwitters)]
+
+[X_train_counts,y_train] = get_xy(train_tweet_frame,tfidf_vectorizer)
+[X_test_counts,y_test] = get_xy(test_tweet_frame,tfidf_vectorizer)
+
+#X_train_counts = tfidf_vectorizer.transform(train_tweet_frame['trigram_text'].tolist())
+#y_train = train_tweet_frame['class_label'].tolist()
+#X_test_counts = tfidf_vectorizer.transform(test_tweet_frame['trigram_text'].tolist())
+#y_test = test_tweet_frame['class_label'].tolist()
+
+
+
+from sklearn.decomposition import PCA, TruncatedSVD
+import matplotlib
+import matplotlib.patches as mpatches
+from matplotlib import pyplot as plt
+
+def plot_LSA(test_data, test_labels, savepath="PCA_demo.csv", plot=True):
+        lsa = TruncatedSVD(n_components=2)
+        lsa.fit(test_data)
+        lsa_scores = lsa.transform(test_data)
+        color_mapper = {label:idx for idx,label in enumerate(set(test_labels))}
+        color_column = [color_mapper[label] for label in test_labels]
+        print(color_column[:5])
+        print(test_labels[:5])
+        colors = ['orange','blue','blue']
+        if plot:
+            plt.scatter(lsa_scores[:,0], lsa_scores[:,1], s=8, alpha=.8, c=color_column, cmap=matplotlib.colors.ListedColormap(colors))
+            red_patch = mpatches.Patch(color='orange', label='Neutral')
+            green_patch = mpatches.Patch(color='blue', label='Complaint')
+            plt.legend(handles=[red_patch, green_patch], prop={'size': 30})
+
+
+#fig = plt.figure(figsize=(16, 16))          
+#plot_LSA(X_train_counts, y_train)
+#plt.show()
+model_list = []
+
+from sklearn.linear_model import LogisticRegression
+modelname = 'Logistic Regression'
+print(modelname)
+clf = LogisticRegression(C=1.0, penalty='l2',class_weight='balanced', solver='liblinear', 
+                          multi_class='ovr', random_state=40)
+clf.fit(X_train_counts, y_train)
+model_list.append([modelname,clf])
+
+
+from sklearn.naive_bayes import MultinomialNB
+modelname = 'Naive Bayes'
+print(modelname)
+#from sklearn.svm import SVC
+clf = MultinomialNB().fit(X_train_counts, y_train)
+#clf = SVC(kernel='linear').fit(X_train_counts, y_train)
+model_list.append([modelname,clf])
+
+
+#modelname = 'Gradient Boosted Regression'
+#print(modelname)
+#from sklearn import ensemble
+#params = {'n_estimators': 500, 'max_depth': 4, 'min_samples_split': 2,
+#          'learning_rate': 0.01, 'loss': 'ls'}
+#clf = ensemble.GradientBoostingRegressor(**params)
+#
+#clf.fit(X_train_counts, y_train)
+#
+#model_list.append([modelname,clf])
+
+#from sklearn.ensemble import RandomForestClassifier
+#modelname = 'Random Forest'
+#print(modelname)
+#clf = RandomForestClassifier(max_depth=2, random_state=0)
+#clf.fit(X_train_counts, y_train)
+#
+#model_list.append([modelname,clf])
+
+#from sklearn.metrics import confusion_matrix
+#confusion_matrix = confusion_matrix(y_test, y_predicted_counts)
+#confusion_matrix
+
+def plot_conmat(confusion_matrix):
+    import seaborn as sn
+    import matplotlib.pyplot as plt
+    #cmap='binary' switch to make it BW
+    fig,ax = plt.subplots(figsize=[10,10])
+    sn.set(font_scale=3)#for label size
+    sn.heatmap(confusion_matrix, annot=True,annot_kws={"size": 25},fmt='g', cmap='Blues',
+               xticklabels=['Neutral','Complaint'],yticklabels=['Neutral','Complaint'],
+              cbar=False,vmin=0,ax=ax)# font size)
+    plt.ylabel('Actual', fontsize=40)
+    plt.xlabel('Predicted', fontsize=40)
+#plot_conmat(confusion_matrix)
+
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report
+
+def get_metrics(y_test, y_predicted):  
+    # true positives / (true positives+false positives)
+    precision = precision_score(y_test, y_predicted, pos_label=None,
+                                    average='weighted')             
+    # true positives / (true positives + false negatives)
+    recall = recall_score(y_test, y_predicted, pos_label=None,
+                              average='weighted')
+    
+    # harmonic mean of precision and recall
+    f1 = f1_score(y_test, y_predicted, pos_label=None, average='weighted')
+    
+    # true positives + true negatives/ total
+    accuracy = accuracy_score(y_test, y_predicted)
+    return accuracy, precision, recall, f1
+
+for name,clf in model_list:
+    print(name)
+    y_predicted_counts = clf.predict(X_test_counts)
+    accuracy, precision, recall, f1 = get_metrics(y_test, y_predicted_counts)
+
+    print("accuracy = %.3f, precision = %.3f, recall = %.3f, f1 = %.3f" % (accuracy, precision, recall, f1))
+    
+
+
+
+
+#Extracting the top 20 most influencial features (aka words) from the model:
+def show_most_informative_features(vect, clf, n=20):
+    feature_names = vect.get_feature_names()
+    coefs_with_fns = sorted(zip(clf.coef_[0], feature_names))
+    top = zip(coefs_with_fns[:n], coefs_with_fns[:-(n + 1):-1])
+    for (coef_1, fn_1), (coef_2, fn_2) in top:
+        print("\t%.4f\t%-15s\t\t%.4f\t%-15s" % (coef_1, fn_1, coef_2, fn_2))
+
+print(TestTwitters)
+print(TrainTwitters)
+show_most_informative_features(tfidf_vectorizer, clf, n=20)
+

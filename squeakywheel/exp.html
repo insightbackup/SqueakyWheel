@@ -35800,28 +35800,25 @@
 /***/ })
 /******/ ]);
 //# sourceMappingURL=bundle.js.map </script></head><body>
-        <div class="lime top_div" id="top_divKA93ODUO25AC2CZ"></div>
+        <div class="lime top_div" id="top_div2CZ0TG88FTFT4O2"></div>
         
         <script>
-        var top_div = d3.select('#top_divKA93ODUO25AC2CZ').classed('lime top_div', true);
+        var top_div = d3.select('#top_div2CZ0TG88FTFT4O2').classed('lime top_div', true);
         
             var pp_div = top_div.append('div')
                                 .classed('lime predict_proba', true);
             var pp_svg = pp_div.append('svg').style('width', '100%');
-            var pp = new lime.PredictProba(pp_svg, ["complaint", "neutral"], [0.5067459662183709, 0.4932540337816291]);
+            var pp = new lime.PredictProba(pp_svg, ["complaint", "neutral"], [0.21218670803942985, 0.7878132919605702]);
             
         
         var exp_div;
             var exp = new lime.Explanation(["complaint", "neutral"]);
         
                 exp_div = top_div.append('div').classed('lime explanation', true);
-                exp.show([["hey", -0.05562121076490813], ["this", -0.03138906585720344], ["amp", 0.023594545636456864], ["uk", -0.020518879882256993], ["love", 0.02012748527038223], ["do", -0.020116684752441008], ["donate", 0.019901766759225666], ["know", 0.01595617558327312], ["in", 0.01212093820619673], ["decision", -0.012120057643834151]], 0, exp_div);
-                
-                exp_div = top_div.append('div').classed('lime explanation', true);
-                exp.show([["hey", 0.05562121076490814], ["this", 0.03138906585720342], ["amp", -0.02359454563645686], ["uk", 0.02051887988225699], ["love", -0.02012748527038221], ["do", 0.020116684752441005], ["donate", -0.019901766759225663], ["know", -0.015956175583273134], ["in", -0.012120938206196724], ["decision", 0.012120057643834154]], 1, exp_div);
+                exp.show([["help", 0.09906978477007275], ["no", 0.039490824686490254], ["hold", 0.02759762128348664], ["this", 0.023582907477387397], ["been", 0.02335947213098265], ["40", 0.018877509948465137]], 1, exp_div);
                 
         var raw_div = top_div.append('div');
-            exp.show_raw_text([["hey", 0, -0.05562121076490813], ["this", 112, -0.03138906585720344], ["amp", 73, 0.023594545636456864], ["uk", 120, -0.020518879882256993], ["love", 7, 0.02012748527038223], ["do", 109, -0.020116684752441008], ["donate", 29, 0.019901766759225666], ["know", 88, 0.01595617558327312], ["in", 64, 0.01212093820619673], ["in", 117, 0.01212093820619673], ["decision", 17, -0.012120057643834151]], 0, "hey  i love your decision to donate 100  unused food to charity in us!   amp  i want to know   when will you do this in uk?", raw_div, true);
+            exp.show_raw_text([["help", 68, 0.09906978477007275], ["no", 56, 0.039490824686490254], ["hold", 33, 0.02759762128348664], ["this", 0, 0.023582907477387397], ["been", 25, 0.02335947213098265], ["40", 45, 0.018877509948465137]], 1, "this is ridiculous       been on hold almost 40 min and no one will help me", raw_div, true);
             
         </script>
         </body></html>

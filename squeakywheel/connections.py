@@ -22,6 +22,19 @@ def twitterapi():
     auth.secure = True
     return api
 
+def pythontwitterapi():
+    import twitter
+    consumer_key = 'sP6xdQz6sf6W2EfFGoZ7dbH5C'
+    consumer_secret = 't1AVU02CGlJCf1g0KnR9LMJT0LR8Ak5gVI5gWjAeWcqODag5eJ'
+
+    access_token = '1039249629362118657-3oqguUqZ0L4mH6HGZ6Yy5HNjGaPDKR'
+    access_token_secret = 'p2LYHujRz2GOwaUiOCXt4zkcPPYf3FE8GOX8l2mRduf50'
+    api = twitter.Api(consumer_key=consumer_key,
+                      consumer_secret=consumer_secret,
+                      access_token_key=access_token,
+                      access_token_secret=access_token_secret)
+    return api
+
 def postgresconnect(db_name):
     from sqlalchemy import create_engine
     from sqlalchemy_utils import database_exists, create_database
@@ -244,8 +257,9 @@ def ExplainTweet(tweet):
     class_names = ['complaint','neutral']
     modelpickle = open('model.pkl','rb')
     [myclf,vectorizer] = pickle.load(modelpickle)
-    c = make_pipeline(vectorizer, rf)
+    c = make_pipeline(vectorizer, myclf)
     from lime.lime_text import LimeTextExplainer
     explainer = LimeTextExplainer(class_names=class_names)
-    exp = explainer.explain_instance(tweet, c.predict, num_features=6)
+    exp = explainer.explain_instance(tweet, c.predict_proba, num_features=6)
     print(exp.as_list())
+    return exp

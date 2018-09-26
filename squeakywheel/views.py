@@ -6,6 +6,7 @@ from sqlalchemy_utils import database_exists, create_database
 import pandas as pd
 import psycopg2
 import connections
+import python-twitter
 #from connections import RetrieveSingleAccountTweetsWithJson,twitterapi
 #from a_Model import ModelIt
 
@@ -56,6 +57,7 @@ def squeaky_output():
   #get Twitter account to categorize
   twitter_account = request.args.get('twitter_account')
   api = connections.twitterapi()
+  pyapi = connections.pythontwitterapi()
   tweetcount = 300
   tweetlist, tweetcount = connections.RetrieveSingleAccountTweetsWithJson(api,twitter_account,False,tweetcount)
   tf = pd.DataFrame(tweetlist)
@@ -65,9 +67,9 @@ def squeaky_output():
   numcomplaints = tf[tf['predictions']==1]['predictions'].count()
   tweetjson = tf[tf['predictions']==1]['json'].tolist()
 
-  engine,con = connections.postgresconnect('tweetdata')
-  tf_lite = tf.drop(['json','mentions'],1)
-  tf_lite.to_sql('test_tweets',engine,if_exists='replace')
+  #engine,con = connections.postgresconnect('tweetdata')
+  #tf_lite = tf.drop(['json','mentions'],1)
+  #tf_lite.to_sql('test_tweets',engine,if_exists='replace')
 
 
   #for i in range(0,query_results.shape[0]):

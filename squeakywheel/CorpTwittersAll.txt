@@ -3,7 +3,6 @@
 @Walmart,@WalmartHelp,retail
 @Amazon,@AmazonHelp,retail
 @Dell,@DellCares,tech
-@Apple,@AppleSupport,tech
 @Microsoft,@MicrosoftHelps,tech
 @Fedex,@FedexHelp,delivery
 @UPS,@UPSHelp,delivery
@@ -11,7 +10,7 @@
 @LinkedIn,@LinkedInHelp,web
 @Comcast,@ComcastCares,cable
 @AmericanExpress,@AskAmex,finance
-@Mastercard, @AskMastercard,finance
+@Mastercard,@AskMastercard,finance
 @Visa,@AskVisa,finance
 @Spotify,@SpotifyCares,web
 @Dropbox,@DropboxSupport,web
@@ -23,4 +22,16 @@
 @Tmobile,@TmobileHelp,mobile
 @ATT,@ATTCares,mobile
 @Sprint,@SprintCare,mobile
+@Apple,@AppleSupport,tech
+motorolaus,moto_support,mobile
+motorola,motorolasupport,mobile
+lgus,lgussupport,mobile
+htc,htchelp,mobile
+oneplus,oneplus_support,mobile
+
+
+
+
+
+
 
