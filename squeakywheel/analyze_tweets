@@ -73,6 +73,7 @@ stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s'])
 train_tweets['trigram_text'] = train_tweets['trigram_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
 
 # randomize training and test corps
+train_to_test_ratio = 4
 CorpTwitters = pd.read_csv('CorpTwittersAll.csv',names=['Main','Support','Sector'])
 #ComplaintAccounts = CorpTwitters['Support'].apply(lambda x: x[1:].lower())
 #MainAccounts = CorpTwitters['Main'].apply(lambda x: x[1:].lower())
@@ -80,7 +81,7 @@ CorpTwitters = CorpTwitters.iloc[:-1,:]
 CorpTwitters['Main'] = CorpTwitters['Main'].str.lower()
 CorpTwitters['Support'] = CorpTwitters['Support'].str.lower()
 import random
-ntests = len(CorpTwitters)//4
+ntests = len(CorpTwitters)//train_to_test_ratio
 ntrain = len(CorpTwitters)-ntests
 randdex = random.sample(range(len(CorpTwitters)),ntests)
 CorpArray = np.array(CorpTwitters)
@@ -93,9 +94,9 @@ TrainTwitters = np.reshape(TrainTwitters[:,:2],ntrain*2)
 
 print(TestTwitters)
 print(TrainTwitters)
-#print(train_tweets['source'].unique())
 
-#clean_questions = pd.read_csv('clean_questions.csv')
+
+
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer

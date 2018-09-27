@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Sep 26 18:28:43 2018
+
+@author: rcarns
+"""
+
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.datasets import fetch_20newsgroups
+from sklearn.decomposition import NMF, LatentDirichletAllocation
+
+n_docs = 10
+def display_topics(model, feature_names, no_top_words,documents,ids,tfidf):
+    for topic_idx, topic in enumerate(model.components_):
+        print("Topic {0}:".format(topic_idx))
+        print(" ".join([feature_names[i]
+                        for i in topic.argsort()[:-no_top_words - 1:-1]]))
+        foo = nmf.transform(tfidf)
+        top_doc_indices = np.argsort( foo[:,topic_idx] )[::-1][0:n_docs]
+        print(top_doc_indices)
+        for doc_index in top_doc_indices:
+            print(ids[doc_index])
+
+#dataset = fetch_20newsgroups(shuffle=True, random_state=1, remove=('headers', 'footers', 'quotes'))
+#documents = dataset.data
+all_tweets = pd.read_csv('train_tweets.csv')
+i=18
+
+sources = all_tweets['source'].unique().tolist()
+source= sources[i]
+print(source)
+topic_tweets = all_tweets[all_tweets['source']==source]['text'].tolist()
+documents = topic_tweets
+ids = all_tweets[all_tweets['source']==source]['class_label'].tolist()
+
+no_features = 1000
+
+# NMF is able to use tf-idf
+tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
+tfidf = tfidf_vectorizer.fit_transform(documents)
+tfidf_feature_names = tfidf_vectorizer.get_feature_names()
+
+# LDA can only use raw term counts for LDA because it is a probabilistic graphical model
+#tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2,  stop_words='english')
+#tf = tf_vectorizer.fit_transform(documents)
+#tf_feature_names = tf_vectorizer.get_feature_names()
+
+no_topics = 10
+
+# Run NMF
+nmf = NMF(n_components=no_topics, random_state=1, alpha=.1, l1_ratio=.5, init='nndsvd').fit(tfidf)
+n_top_documents = 5
+n_top_words = 5
+# get list of feature names
+feature_names = tfidf_vectorizer.get_feature_names()
+#for topic_id, topic in enumerate(nmf.components_):
+        #word_list = []
+        #for i in topic.argsort()[:-n_top_words - 1:-1]:
+        #    word_list.append(feature_names[i])
+            
+
+            # check that the review contains one of the topic words
+            #if any(word in df['reviewText'].iloc[doc_index].lower() for word in topic_words):
+
+# Run LDA
+#lda = LatentDirichletAllocation(n_topics=no_topics, max_iter=5, learning_method='online', learning_offset=50.,random_state=0).fit(tf)
+
+no_top_words = 5
+display_topics(nmf, tfidf_feature_names, no_top_words,documents,ids,tfidf)
+#display_topics(lda, tf_feature_names, no_top_words)
+

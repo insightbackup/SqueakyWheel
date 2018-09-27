@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Sep 26 13:09:34 2018
+
+@author: rcarns
+"""
+
+import keras
+import nltk
+import pandas as pd
+import numpy as np
+import re
+import codecs
+import textblob
+
+# Gensim
+import gensim
+import gensim.corpora as corpora
+from gensim.utils import simple_preprocess
+from gensim.models import CoherenceModel
+
+
+import warnings
+warnings.filterwarnings("ignore",category=DeprecationWarning)
+warnings.filterwarnings("ignore",category=UserWarning)
+
+
+train_tweets = pd.read_csv('train_tweets.csv')
+
+train_tweets = (train_tweets.drop_duplicates(subset='text'))
+apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+
+from nltk.tokenize import RegexpTokenizer
+
+
+
+    
+
+tokenizer = RegexpTokenizer(r'\w+')
+train_tweets.loc[:,"tokens"] = train_tweets.loc[:,"text"].apply(tokenizer.tokenize)
+
+data_words = train_tweets['tokens'][:]
+
+
+# Build the bigram and trigram models
+bigram = gensim.models.Phrases(data_words, min_count=5, threshold=5) # higher threshold fewer phrases.
+trigram = gensim.models.Phrases(bigram[data_words], threshold=5)  
+
+# Faster way to get a sentence clubbed as a trigram/bigram
+bigram_mod = gensim.models.phrases.Phraser(bigram)
+trigram_mod = gensim.models.phrases.Phraser(trigram)
+
+# See trigram example
+print(trigram_mod[bigram_mod[data_words[0:10]]])
+
+def make_bigrams(texts):
+    return [bigram_mod[doc] for doc in texts]
+
+def make_trigrams(texts):
+    return [trigram_mod[bigram_mod[doc]] for doc in texts]
+
+train_tweets['tokens'] = trigram_mod[bigram_mod[train_tweets['tokens']]]
+
+train_tweets['tokens'][:10]
+train_tweets['trigram_text'] = train_tweets['tokens'].apply(' '.join)
+train_tweets['trigram_text'][:10]
+
+# Import stopwords with scikit-learn
+from sklearn.feature_extraction import text
+stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s'])
+train_tweets['trigram_text'] = train_tweets['trigram_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+
+# randomize training and test corps
+train_to_test_ratio = 4
+CorpTwitters = pd.read_csv('CorpTwittersAll.csv',names=['Main','Support','Sector'])
+#ComplaintAccounts = CorpTwitters['Support'].apply(lambda x: x[1:].lower())
+#MainAccounts = CorpTwitters['Main'].apply(lambda x: x[1:].lower())
+CorpTwitters = CorpTwitters.iloc[:-1,:]
+CorpTwitters['Main'] = CorpTwitters['Main'].str.lower()
+CorpTwitters['Support'] = CorpTwitters['Support'].str.lower()
+import random
+ntests = len(CorpTwitters)//train_to_test_ratio
+ntrain = len(CorpTwitters)-ntests
+randdex = random.sample(range(len(CorpTwitters)),ntests)
+CorpArray = np.array(CorpTwitters)
+TestTwitters = CorpArray[randdex,:]
+TestTwitters = np.reshape(TestTwitters[:,:2],ntests*2)
+mask = np.ones(len(CorpArray), dtype=bool)
+mask[randdex] = False
+TrainTwitters = CorpArray[mask,:]
+TrainTwitters = np.reshape(TrainTwitters[:,:2],ntrain*2)
+
+print(TestTwitters)
+print(TrainTwitters)
+
+
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+
+
+# the \ ? in the string replace accounts for a typo in the list of corps
+train_tweets['source'] = train_tweets['source'].str.replace('@\ ?@','@')
+train_tweets = train_tweets.dropna('rows','any')
+
+
+def train_vectorize(tweetframe):
+    tweet_corpus = train_tweets["trigram_text"].tolist()
+    tfidf_vectorizer = TfidfVectorizer(token_pattern=r"(?u)\S\S+")
+    tfidf_vectorizer.fit(tweet_corpus)
+
+    return tfidf_vectorizer
+
+def get_xy(subframe,vectorizer):
+    X = vectorizer.transform(subframe['trigram_text'].tolist())
+    y = subframe['class_label'].tolist()
+    return X,y
+
+tfidf_vectorizer = train_vectorize(train_tweets)
+
+test_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TestTwitters)]
+train_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TrainTwitters)]
+
+[X_train_counts,y_train] = get_xy(train_tweet_frame,tfidf_vectorizer)
+[X_test_counts,y_test] = get_xy(test_tweet_frame,tfidf_vectorizer)
+
+
+from sklearn import svm, grid_search
+from sklearn.model_selection import GridSearchCV
+#def svc_param_selection(X, y, nfolds):
+X = X_train_counts
+y = y_train
+nfolds = 5
+Cs = [0.001, 0.01, 0.1, 1, 10]
+gammas = [0.001, 0.01, 0.1, 1]
+param_grid = {'C': Cs, 'gamma' : gammas}
+grid_search = GridSearchCV(svm.SVC(kernel='rbf'), param_grid, cv=nfolds)
+grid_search.fit(X, y)
+grid_search.best_params_
+print(grid_search.best_params_)
+
+
+#
+#from matplotlib.colors import ListedColormap
+#from sklearn.model_selection import train_test_split
+#from sklearn.preprocessing import StandardScaler
+#from sklearn.datasets import make_moons, make_circles, make_classification
+#from sklearn.neural_network import MLPClassifier
+#from sklearn.neighbors import KNeighborsClassifier
+#from sklearn.svm import SVC
+#from sklearn.gaussian_process import GaussianProcessClassifier
+#from sklearn.gaussian_process.kernels import RBF
+#from sklearn.tree import DecisionTreeClassifier
+#from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+#from sklearn.naive_bayes import GaussianNB
+#from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+#
+##names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", 
+#names = ["Gaussian Process",
+#         "Decision Tree", "Random Forest", "Neural Net", "AdaBoost",
+#         "Naive Bayes", "QDA"]
+#
+#classifiers = [
+##    KNeighborsClassifier(3),
+##    SVC(kernel="linear", C=0.025),
+##    SVC(gamma=2, C=1),
+#    GaussianProcessClassifier(1.0 * RBF(1.0)),
+#    DecisionTreeClassifier(max_depth=5),
+#    RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+#    MLPClassifier(alpha=1),
+#    AdaBoostClassifier(),
+#    GaussianNB(),
+#    QuadraticDiscriminantAnalysis()]
+#
+#
+#
+#for name, clf in zip(names, classifiers):
+#    print(name)
+#    try:
+#        clf.fit(X_train_counts, y_train)
+#        score = clf.score(X_test_counts, y_test)
+#        print(score)
+#    except:
+#        pass
+#    

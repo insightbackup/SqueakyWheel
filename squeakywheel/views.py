@@ -6,7 +6,7 @@ from sqlalchemy_utils import database_exists, create_database
 import pandas as pd
 import psycopg2
 import connections
-import python-twitter
+import twitter
 #from connections import RetrieveSingleAccountTweetsWithJson,twitterapi
 #from a_Model import ModelIt
 

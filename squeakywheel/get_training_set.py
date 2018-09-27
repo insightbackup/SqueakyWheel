@@ -15,6 +15,7 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
     import numpy as np
     import pickle
     from connections import twitterapi
+    from connections import postgresconnect
     
     tweetsPerQry = 100
     sinceId = None
@@ -59,7 +60,13 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
                     tweetdict = {}
                     tweetdict['text'] = tweetson['full_text']
                     tweetdict['mentions'] = tweetson['entities']['user_mentions']
+                    tweetdict['json'] = tweetson
+                    tweetdict['id'] = tweetson['id_str']           
+                    tweetdict['username'] = tweetson['user']['screen_name']
+                    tweetdict['created_at'] = tweetson['created_at']
+                    tweetdict['text'] = tweetson['full_text']
                     tweetdict['source'] = accountname
+                
                     if isSupport == True:
                         tweetdict['choose_one']='complaint'
                         tweetdict['class_label'] = 1
@@ -82,6 +89,7 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
     #picklefile = open(storagefile,'wb')
     #pickle.dump(list_of_tweets,picklefile)
     #picklefile.close()
+    
     return tweetdict_list,tweetCount
     
 import tweepy
@@ -137,6 +145,10 @@ neutralframe = pd.DataFrame(neutrallist)
 storagefile = 'neutral'+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
 with open(storagefile,'wb') as picklefile:
     pickle.dump(neutralframe,picklefile)
+    
+engine,con = postgresconnect('tweetdata')
+complaintframe.to_sql('training_tweets',if_exists='append')
+
 
     
 

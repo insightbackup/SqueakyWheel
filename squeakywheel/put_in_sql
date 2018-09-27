@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Sep 26 16:39:35 2018
+
+@author: rcarns
+"""
+
+import connections
+engine,con = postgresconnect('tweetdata')
+
+
+import pickle
+import glob
+import pandas as pd
+for filename in glob.glob('complaint*.dat'):
+    isSupport = True
+    with open(filename,'rb') as picklefile:
+        tweets = pickle.load(picklefile)
+        #print(tweets[0])
+        tweetdict_list = []
+        for tweetson in tweets:
+            tweetdict = {}
+            tweetdict['json'] = tweetson
+            tweetdict['id'] = tweetson['id_str']
+            tweetdict['mentions'] = tweetson['entities']['user_mentions']
+            tweetdict['username'] = tweetson['user']['screen_name']
+            tweetdict['created_at'] = tweetson['created_at']
+            tweetdict['text'] = tweetson['full_text']
+            tweetdict['mentions'] = tweetson['entities']['user_mentions']
+            tweetdict['source'] = accountname
+            if isSupport == True:
+                tweetdict['choose_one']='complaint'
+                tweetdict['class_label'] = 1
+            elif isSupport == False:
+                tweetdict['choose_one']='neutral'
+                tweetdict['class_label'] = 0
+            tweetdict_list.append(tweetdict)
+        tf = pd.DataFrame(tweetdict,columns=['json','id','mentions','username','created_at','text','mentions','source','choose_one','class_label'])
+        print(tf.head())

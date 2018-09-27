@@ -9,7 +9,7 @@
     <meta name="author" content="">
     <link rel="icon" href="../../favicon.ico">
 
-  <script>window.twttr = (function(d, s, id) {
+  <!--<script>window.twttr = (function(d, s, id) {
   var js, fjs = d.getElementsByTagName(s)[0],
     t = window.twttr || {};
   if (d.getElementById(id)) return t;
@@ -36,7 +36,7 @@ twttr.widgets.createTweet(
   .then(function (el) {
     console.log("Tweet displayed.")
   });
-  </script>
+</script>-->
 
     <title>Squeaky Wheel</title>
 
@@ -52,6 +52,7 @@ twttr.widgets.createTweet(
     <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
     <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
     <script src="../../assets/js/ie-emulation-modes-warning.js"></script>
+    <script src="https://platform.twitter.com/widgets.js"></script>
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -113,17 +114,55 @@ twttr.widgets.createTweet(
         <p class="lead">Here are the first 10:<br> </p>
       </div>
 
-      <table class="table table-hover">
+      <table class="table table-hover" align='center'>
       <tr><th>Complaints</th><!--<th>Attendant</th><th>Birth Month</th></tr>-->
-      {% for tweet in tweettext[:10] %}
-      <tr><td align='center'>
-        <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
-        {{ tweet['full_text'] }}<br>
-        <blockquote class="twitter-tweet"><p lang="en" dir="ltr">Sunsets don&#39;t get much better than this one over <a href="https://twitter.com/GrandTetonNPS?ref_src=twsrc%5Etfw">@GrandTetonNPS</a>. <a href="https://twitter.com/hashtag/nature?src=hash&amp;ref_src=twsrc%5Etfw">#nature</a> <a href="https://twitter.com/hashtag/sunset?src=hash&amp;ref_src=twsrc%5Etfw">#sunset</a> <a href="http://t.co/YuKy2rcjyU">pic.twitter.com/YuKy2rcjyU</a></p>&mdash; US Department of the Interior (@Interior) <a href="https://api.twitter.com/1.1/statuses/oembed.json?id={{tweet['str_id']}}">May 5, 2014</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<tr>
+      {% for tweet in tweettext[:3] %}
 
-
+      <td>
+        {{i}}
+        <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
+          <p lang="en" dir="ltr">
+            <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
+            <br>
+            {{ tweet['full_text'] }}
+          </p>
+          <a href="https://twitter.com/{{tweet['user']['screen_name']}}/status/{{tweet['id_str']}}"></a>
+        </blockquote>
       </td><!--<td></td><td> </td></tr>-->
       {% endfor %}
+      <tr>
+        {% for tweet in tweettext[3:6] %}
+
+        <td>
+          {{i}}
+          <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
+            <p lang="en" dir="ltr">
+              <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
+              <br>
+              {{ tweet['full_text'] }}
+            </p>
+            <a href="https://twitter.com/{{tweet['user']['screen_name']}}/status/{{tweet['id_str']}}"></a>
+          </blockquote>
+        </td><!--<td></td><td> </td></tr>-->
+        {% endfor %}
+        <tr>
+          {% for tweet in tweettext[6:9] %}
+
+          <td>
+            {{i}}
+            <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
+              <p lang="en" dir="ltr">
+                <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
+                <br>
+                {{ tweet['full_text'] }}
+              </p>
+              <a href="https://twitter.com/{{tweet['user']['screen_name']}}/status/{{tweet['id_str']}}"></a>
+            </blockquote>
+          </td><!--<td></td><td> </td></tr>-->
+          {% endfor %}
+
+
       </table>
 
 
