@@ -106,6 +106,10 @@ from sklearn.feature_extraction.text import TfidfTransformer
 train_tweets['source'] = train_tweets['source'].str.replace('@\ ?@','@')
 train_tweets = train_tweets.dropna('rows','any')
 
+train_tweets = (train_tweets.drop_duplicates(subset='text'))
+apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+
 
 def train_vectorize(tweetframe):
     tweet_corpus = train_tweets["trigram_text"].tolist()
@@ -138,6 +142,16 @@ from sklearn.decomposition import PCA, TruncatedSVD
 import matplotlib
 import matplotlib.patches as mpatches
 from matplotlib import pyplot as plt
+from sklearn import cluster, datasets, mixture 
+from sklearn.neighbors import kneighbors_graph 
+from sklearn.preprocessing import StandardScaler 
+from itertools import cycle, islice
+from sklearn.decomposition import PCA, TruncatedSVD
+import matplotlib
+import matplotlib.patches as mpatches
+from matplotlib import pyplot as plt
+from sklearn.cluster import MiniBatchKMeans
+
 
 def plot_LSA(test_data, test_labels, savepath="PCA_demo.csv", plot=True):
         lsa = TruncatedSVD(n_components=2)
@@ -167,6 +181,28 @@ clf = LogisticRegression(C=1.0, penalty='l2',class_weight='balanced', solver='li
                           multi_class='ovr', random_state=40)
 clf.fit(X_train_counts, y_train)
 model_list.append([modelname,clf])
+
+from sklearn.metrics import roc_curve,roc_auc_score
+y_proba = clf.predict_proba(X_test_counts)[:,1]
+##Computing false and true positive rates
+fpr, tpr, thresholds=roc_curve(y_test,y_proba)
+
+import matplotlib.pyplot as plt
+plt.figure()
+##Adding the ROC
+plt.plot(fpr, tpr, color='red',
+ lw=2, label='ROC curve')
+##Random FPR and TPR
+plt.plot([0, 1], [0, 1], color='blue', lw=2, linestyle='--')
+##Title and label
+plt.xlabel('False positive rate')
+plt.ylabel('True positive rate')
+plt.title('ROC curve')
+plt.show()
+#print(thresholds)
+print(roc_auc_score(clf.predict(X_test_counts),y_test))
+
+
 
 
 from sklearn.naive_bayes import MultinomialNB
@@ -253,4 +289,23 @@ def show_most_informative_features(vect, clf, n=20):
 print(TestTwitters)
 print(TrainTwitters)
 show_most_informative_features(tfidf_vectorizer, clf, n=20)
+
+
+random_state = 1
+n_clusters = 5
+import matplotlib.colors as colors
+colors_={'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'}
+mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=random_state).fit(test_data)
+for this_centroid, k, col in zip(mbk.cluster_centers_,
+                     range(n_clusters), colors_):
+    #print(col)
+    mask = mbk.labels_ == k
+    plt.scatter(lsa_scores[mask, 0], lsa_scores[mask, 1], c=col)
+
+#from sklearn.svm import SVC
+#clf = SVC(gamma=1, C=1,probability=True)
+#clf.fit(X_train_counts,y_train)
+#y_predicted_counts = clf.predict(X_test_counts)
+#y_proba = clf.predict_proba(X_test_counts)[:,1]
+
 

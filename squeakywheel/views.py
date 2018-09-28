@@ -1,5 +1,6 @@
 from flask import render_template
 from flask import request
+from flask import Flask, redirect, url_for, request
 from squeakywheel import app
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
@@ -54,29 +55,33 @@ def squeaky_input():
 
 @app.route('/output')
 def squeaky_output():
-  #get Twitter account to categorize
-  twitter_account = request.args.get('twitter_account')
-  api = connections.twitterapi()
-  pyapi = connections.pythontwitterapi()
-  tweetcount = 300
-  tweetlist, tweetcount = connections.RetrieveSingleAccountTweetsWithJson(api,twitter_account,False,tweetcount)
-  tf = pd.DataFrame(tweetlist)
-  #print('columns'+tf.columns)
-  predictions = connections.RunModel(tf)
-  tf['predictions'] = predictions
-  numcomplaints = tf[tf['predictions']==1]['predictions'].count()
-  tweetjson = tf[tf['predictions']==1]['json'].tolist()
+	#get Twitter account to categorize
+	twitter_account = request.args.get('twitter_account')
+	#if request.method=='POST':
+	#	return redirect(url_for('topics',twitter_account = twitter_account))
+	api = connections.twitterapi()
+	pyapi = connections.pythontwitterapi()
+	tweetcount = 1000
+	tweetlist, tweetcount = connections.RetrieveSingleAccountTweetsWithJson(api,twitter_account,False,tweetcount)
+	tf = pd.DataFrame(tweetlist)
+	#print('columns'+tf.columns)
+	predictions = connections.RunModel(tf)
+	tf['predictions'] = predictions
+	numcomplaints = tf[tf['predictions']==1]['predictions'].count()
+	tweetjson = tf[tf['predictions']==1]['json'].tolist()
+	engine,con = connections.postgresconnect('tweetdata')
+	#sql_query="SELECT * FROM test_tweets"
+	tablename = twitter_account+'demo_tweets'
+	#foo=pd.read_sql_query(sql_query,con)
+	tf_trim = tf.drop(['json','mentions'],axis=1)
+	tf_trim.to_sql(name=tablename,con=engine,if_exists='replace')
+	results = connections.GetTopics(tf[tf['predictions']==1])
 
-  #engine,con = connections.postgresconnect('tweetdata')
-  #tf_lite = tf.drop(['json','mentions'],1)
-  #tf_lite.to_sql('test_tweets',engine,if_exists='replace')
+	return render_template("squeakyoutput.html", numcomplaints = numcomplaints,tweettext=tweetjson,tweetcount=tweetcount,results=results)
 
-
-  #for i in range(0,query_results.shape[0]):
-	  #births.append(dict(index=query_results.iloc[i]['index'], attendant=query_results.iloc[i]['attendant'], birth_month=query_results.iloc[i]['birth_month']))
-      #births.append(dict(index=query_results.iloc[i]['index'], attendant=query_results.iloc[i]['attendant'], birth_month=query_results.iloc[i]['birth_month']))
-      #the_result = ModelIt(patient,births)
-      #the_result = ''
-  return render_template("squeakyoutput.html", numcomplaints = numcomplaints,tweettext=tweetjson,tweetcount=tweetcount)
-  #@app.route('/explainer')
-  #def explain_this():
+@app.route('/topics/<twitter_account>')
+def squeaky_topics(twitter_account):
+	#twitter_account = request.args.get('twitter_account')
+	sql_query="SELECT * FROM "+twitter_account+"demo_tweets"
+	tf=pd.read_sql_query(sql_query,con)
+	return render_template("squeakytopics.html", numcomplaints = numcomplaints,tweettext=tweetjson,tweetcount=tweetcount)

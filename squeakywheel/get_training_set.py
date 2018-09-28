@@ -147,7 +147,8 @@ with open(storagefile,'wb') as picklefile:
     pickle.dump(neutralframe,picklefile)
     
 engine,con = postgresconnect('tweetdata')
-complaintframe.to_sql('training_tweets',if_exists='append')
+complaintframe.to_sql(con,'training_tweets',if_exists='append')
+
 
 
     

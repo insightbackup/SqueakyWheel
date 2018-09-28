@@ -11,8 +11,11 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.decomposition import NMF, LatentDirichletAllocation
+from nltk.tokenize import RegexpTokenizer
+from nltk.tokenize import TreebankWordTokenizer
+from nltk.tokenize.casual import TweetTokenizer
 
-n_docs = 10
+n_docs = 5
 def display_topics(model, feature_names, no_top_words,documents,ids,tfidf):
     for topic_idx, topic in enumerate(model.components_):
         print("Topic {0}:".format(topic_idx))
@@ -20,26 +23,34 @@ def display_topics(model, feature_names, no_top_words,documents,ids,tfidf):
                         for i in topic.argsort()[:-no_top_words - 1:-1]]))
         foo = nmf.transform(tfidf)
         top_doc_indices = np.argsort( foo[:,topic_idx] )[::-1][0:n_docs]
-        print(top_doc_indices)
-        for doc_index in top_doc_indices:
-            print(ids[doc_index])
+        for index in top_doc_indices:
+            print(index)
+        #for doc_index in top_doc_indices:
+        #    print(ids[doc_index])
 
 #dataset = fetch_20newsgroups(shuffle=True, random_state=1, remove=('headers', 'footers', 'quotes'))
 #documents = dataset.data
 all_tweets = pd.read_csv('train_tweets.csv')
-i=18
+all_tweets = all_tweets.dropna('rows','any') 
+
+i=6
 
 sources = all_tweets['source'].unique().tolist()
 source= sources[i]
 print(source)
-topic_tweets = all_tweets[all_tweets['source']==source]['text'].tolist()
-documents = topic_tweets
+topic_tweets = all_tweets[all_tweets['source']==source]['processed_text'].tolist()
+
 ids = all_tweets[all_tweets['source']==source]['class_label'].tolist()
 
 no_features = 1000
 
+
+#for i in range(len(topic_tweets)):
+#    topic_tweets[i] = expandContractions(topic_tweets[i])
+
+documents = topic_tweets
 # NMF is able to use tf-idf
-tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2, stop_words='english')
+tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2)
 tfidf = tfidf_vectorizer.fit_transform(documents)
 tfidf_feature_names = tfidf_vectorizer.get_feature_names()
 
@@ -48,7 +59,7 @@ tfidf_feature_names = tfidf_vectorizer.get_feature_names()
 #tf = tf_vectorizer.fit_transform(documents)
 #tf_feature_names = tf_vectorizer.get_feature_names()
 
-no_topics = 10
+no_topics = 15
 
 # Run NMF
 nmf = NMF(n_components=no_topics, random_state=1, alpha=.1, l1_ratio=.5, init='nndsvd').fit(tfidf)
@@ -71,4 +82,6 @@ feature_names = tfidf_vectorizer.get_feature_names()
 no_top_words = 5
 display_topics(nmf, tfidf_feature_names, no_top_words,documents,ids,tfidf)
 #display_topics(lda, tf_feature_names, no_top_words)
+
+
 
