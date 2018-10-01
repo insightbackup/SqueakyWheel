@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+  <!--hi!-->
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -41,7 +42,7 @@ twttr.widgets.createTweet(
     <title>Squeaky Wheel</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="../static/css/bootstrap.css" rel="stylesheet">
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <link href="../../assets/css/ie10-viewport-bug-workaround.css" rel="stylesheet">
@@ -95,7 +96,7 @@ twttr.widgets.createTweet(
 
       <form  action="/output" method="GET">
         <div class="form-group">
-          <label for="birth_month">Twitter Account:</label>
+          <label for="twitter_account">Twitter Account:</label>
           <input type="text" id="twitter_account" name='twitter_account' placeholder="e.g. ">
         </div>
         <div>
@@ -112,12 +113,12 @@ twttr.widgets.createTweet(
     <p class="lead"><br> </p>
 
       <table class="table table-hover" align='center'>
-      <tr><th>Complaints</th><!--<th>Attendant</th><th>Birth Month</th></tr>-->
+      <tr><th>Complaints</th><!--<th>leftover code!</th><th>Birth Month</th></tr>-->
 <tr>
       {% for tweet in tweettext[:3] %}
 
       <td>
-        {{i}}
+        <!--<h4>Followers:{{tweet['followers']}}</h4>-->
         <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
           <p lang="en" dir="ltr">
             <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
@@ -132,7 +133,7 @@ twttr.widgets.createTweet(
         {% for tweet in tweettext[3:6] %}
 
         <td>
-          {{i}}
+          <!--<h4>Followers:{{tweet['followers']}}</h4>-->
           <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
             <p lang="en" dir="ltr">
               <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
@@ -147,7 +148,7 @@ twttr.widgets.createTweet(
           {% for tweet in tweettext[6:9] %}
 
           <td>
-            {{i}}
+            <!--<h4>Followers:{{tweet['followers']}}</h4>-->
             <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
               <p lang="en" dir="ltr">
                 <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>

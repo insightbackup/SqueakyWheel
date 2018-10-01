@@ -295,12 +295,14 @@ random_state = 1
 n_clusters = 5
 import matplotlib.colors as colors
 colors_={'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'}
-mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=random_state).fit(test_data)
+mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=random_state).fit(y_train)
 for this_centroid, k, col in zip(mbk.cluster_centers_,
                      range(n_clusters), colors_):
     #print(col)
     mask = mbk.labels_ == k
     plt.scatter(lsa_scores[mask, 0], lsa_scores[mask, 1], c=col)
+    
+
 
 #from sklearn.svm import SVC
 #clf = SVC(gamma=1, C=1,probability=True)

@@ -205,6 +205,8 @@ def RetrieveSingleAccountTweetsWithJson(api,accountname,isSupport,maxTweets=1000
                         #print(tweet.created_at.strftime('%x %X')+' '+tweet.full_text)
                         tweetson = tweet._json
                         list_of_tweets.append(tweet._json)
+                        #user = api.get_user(tweetson['user']['screen_name'])
+                        #followers = user.followers_count
                         tweetdict = {}
                         tweetdict['json'] = tweetson
                         tweetdict['id'] = tweetson['id_str']
@@ -213,6 +215,7 @@ def RetrieveSingleAccountTweetsWithJson(api,accountname,isSupport,maxTweets=1000
                         tweetdict['created_at'] = tweetson['created_at']
                         tweetdict['text'] = tweetson['full_text']
                         tweetdict['mentions'] = tweetson['entities']['user_mentions']
+                        #tweetdict['followers'] = followers
                         tweetdict['source'] = accountname
                         if isSupport == True:
                             tweetdict['choose_one']='complaint'
@@ -240,7 +243,9 @@ def RetrieveSingleAccountTweetsWithJson(api,accountname,isSupport,maxTweets=1000
 def RunModel(tweetframe):
     import pickle
     import os
-    os.chdir('/home/rcarns/flaskapps/squeakywheel/')
+    #os.chdir('/home/rcarns/flaskapps/squeakywheel/')
+    print(os.getcwd())
+    os.chdir('./squeakywheel')
     modelpickle = open('model.pkl','rb')
     [myclf,vectorizer] = pickle.load(modelpickle)
     list_corpus = tweetframe['text'].tolist()
