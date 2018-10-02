@@ -7,7 +7,7 @@ Created on Tue Sep 18 10:14:39 2018
 """
 
 def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
-    # the below code draws from 
+    # the below code draws from
     # https://stackoverflow.com/questions/38555191/get-all-twitter-mentions-using-tweepy-for-users-with-millions-of-followers
 
     import tweepy
@@ -16,7 +16,7 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
     import pickle
     from connections import twitterapi
     from connections import postgresconnect
-    
+
     tweetsPerQry = 100
     sinceId = None
     atuser = '@'+account
@@ -24,7 +24,7 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
     retweet_filter='-filter:retweets'
     reply_filter = '-filter:replies'
     searchQuery = atuser+' AND '+retweet_filter+' AND '+reply_filter
-    
+
 
     max_id = -1
     tweetdict_list = []
@@ -61,12 +61,12 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
                     tweetdict['text'] = tweetson['full_text']
                     tweetdict['mentions'] = tweetson['entities']['user_mentions']
                     tweetdict['json'] = tweetson
-                    tweetdict['id'] = tweetson['id_str']           
+                    tweetdict['id'] = tweetson['id_str']
                     tweetdict['username'] = tweetson['user']['screen_name']
                     tweetdict['created_at'] = tweetson['created_at']
                     tweetdict['text'] = tweetson['full_text']
                     tweetdict['source'] = accountname
-                
+
                     if isSupport == True:
                         tweetdict['choose_one']='complaint'
                         tweetdict['class_label'] = 1
@@ -89,9 +89,9 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
     #picklefile = open(storagefile,'wb')
     #pickle.dump(list_of_tweets,picklefile)
     #picklefile.close()
-    
+
     return tweetdict_list,tweetCount
-    
+
 import tweepy
 import pandas as pd
 import numpy as np
@@ -129,32 +129,46 @@ for i in range(len(CorpTwitters)):
             complaintlist.extend(complaintdict_list)
             maxtweets = tweetCount
             print(account,str(maxtweets))
-            
+
         elif accounttype=='Main':
             print(account,str(maxtweets))
             type='neutral'
             neutraldict_list,tweetCount = RetrieveSingleAccountTweets(api,atuser,False,maxtweets)
             neutrallist.extend(neutraldict_list)
-            
+
 complaintframe = pd.DataFrame(complaintlist)
 storagefile = 'complaint'+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
 with open(storagefile,'wb') as picklefile:
     pickle.dump(complaintframe,picklefile)
-    
-neutralframe = pd.DataFrame(neutrallist)    
+
+neutralframe = pd.DataFrame(neutrallist)
 storagefile = 'neutral'+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
 with open(storagefile,'wb') as picklefile:
     pickle.dump(neutralframe,picklefile)
-    
+
+
+# import pickle
+# import pandas as pd
+# import importlib
+# import connections; importlib.reload(connections)
+# from connections import postgresconnect
+# storagefile = 'neutraltweets20181001-193209.dat'
+# with open(storagefile,'rb') as picklefile:
+#     neutralframe = pickle.load(picklefile)
+#
+# storagefile = 'complainttweets20181001-193209.dat'
+# with open(storagefile,'rb') as picklefile:
+#     complaintframe = pickle.load(picklefile)
 engine,con = postgresconnect('tweetdata')
-complaintframe.to_sql(con,'training_tweets',if_exists='append')
+complaintframe.to_sql('training_tweets',engine,if_exists='append')
+#neutralframe.to_sql('training_tweets',engine,if_exists='append')
 
 
 
-    
 
 
-            
+
+
 #for account in ComplaintAccounts[:5]:
 #    print(account)
 #    type = 'complaint'
@@ -184,10 +198,4 @@ complaintframe.to_sql(con,'training_tweets',if_exists='append')
 #    #maxtweets = tweetCount
 #    #import shutil
 #    #shutil.copy(storagefile,type+'tweets.dat')
-#    
-
-
-
-
-
-                
+#

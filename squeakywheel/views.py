@@ -6,7 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 import pandas as pd
 import psycopg2
-import connections
+import importlib
+import connections; importlib.reload(connections)
 import twitter
 #from connections import RetrieveSingleAccountTweetsWithJson,twitterapi
 #from a_Model import ModelIt
@@ -57,6 +58,7 @@ def squeaky_input():
 def squeaky_output():
 	#get Twitter account to categorize
 	twitter_account = request.args.get('twitter_account')
+	twitter_account = 'united'
 	#if request.method=='POST':
 	#	return redirect(url_for('topics',twitter_account = twitter_account))
 	api = connections.twitterapi()
@@ -70,11 +72,9 @@ def squeaky_output():
 	numcomplaints = tf[tf['predictions']==1]['predictions'].count()
 	tweetjson = tf[tf['predictions']==1]['json'].tolist()
 	engine,con = connections.postgresconnect('tweetdata')
-	#sql_query="SELECT * FROM test_tweets"
-	tablename = twitter_account+'demo_tweets'
-	#foo=pd.read_sql_query(sql_query,con)
+	tablename = twitter_account+'_demo_tweets'
 	tf_trim = tf.drop(['json','mentions'],axis=1)
-	tf_trim.to_sql(name=tablename,con=engine,if_exists='replace')
+	tf_trim.to_sql(name=tablename,con=engine,if_exists='append')
 	results = connections.GetTopics(tf[tf['predictions']==1])
 
 	return render_template("squeakyoutput.html", numcomplaints = numcomplaints,tweettext=tweetjson,tweetcount=tweetcount,results=results)

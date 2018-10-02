@@ -244,8 +244,10 @@ def RunModel(tweetframe):
     import pickle
     import os
     #os.chdir('/home/rcarns/flaskapps/squeakywheel/')
-    print(os.getcwd())
-    os.chdir('./squeakywheel')
+    currentdir = os.getcwd()
+    print(currentdir)
+    if 'squeakywheel' not in currentdir:
+        os.chdir('./squeakywheel')
     modelpickle = open('model.pkl','rb')
     [myclf,vectorizer] = pickle.load(modelpickle)
     list_corpus = tweetframe['text'].tolist()
@@ -458,6 +460,7 @@ def ProcessTweets(tf):
       "you're": "you are",
       "you've": "you have"
     }
+
 
     c_re = re.compile('(%s)' % '|'.join(cList.keys()))
 
