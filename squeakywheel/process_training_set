@@ -9,7 +9,7 @@ import tweepy
 import pandas as pd
 import numpy as np
 import pickle
-from connections import twitterapi, postgresconnect
+from keys import twitterapi, postgresconnect
 
 import keras
 import nltk
@@ -247,10 +247,17 @@ def clean_text(df,text_field):
 train_tweets = pd.concat([complaintframe,neutralframe],0)
 train_tweets = train_tweets.reset_index(drop=True)
 train_tweets = clean_text(train_tweets,'text')
-   
+  # Import stopwords with scikit-learn
+from sklearn.feature_extraction import text
+stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s','i','m']) 
+#train_tweets['processed_text'] = train_tweets['processed_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+train_tweets['processed_text'] = train_tweets['text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+print(train_tweets['processed_text'][:3])
+print(train_tweets['text'][:3])
+
 
 tokenizer = RegexpTokenizer(r'\w+')
-train_tweets.loc[:,"tokens"] = train_tweets.loc[:,"text"].apply(tokenizer.tokenize)
+train_tweets.loc[:,"tokens"] = train_tweets.loc[:,"processed_text"].apply(tokenizer.tokenize)
 
 data_words = train_tweets['tokens'][:]
 
@@ -281,10 +288,7 @@ train_tweets['tokens'][:10]
 train_tweets['processed_text'] = train_tweets['tokens'].apply(' '.join)
 
 
-# Import stopwords with scikit-learn
-from sklearn.feature_extraction import text
-stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s'])
-train_tweets['processed_text'] = train_tweets['processed_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+
 
 train_tweets = train_tweets.dropna('rows','any') 
 train_tweets.to_csv('train_tweets.csv')

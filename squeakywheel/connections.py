@@ -7,9 +7,6 @@ Created on Tue Sep 18 10:15:47 2018
 """
 
 
-
-
-
 def GetTestSet(atuser,maxtweets):
     maxtweets = 250
     if not atuser[0]=='@':
@@ -57,7 +54,7 @@ def RetrieveTweets(searchQuery,storagefile,maxTweets=10000):
     import pandas as pd
     import numpy as np
     import pickle
-    from connections import twitterapi
+    from keys import twitterapi
 
     tweetsPerQry = 100
     sinceId = None
@@ -116,7 +113,7 @@ def RetrieveSingleAccountTweetsWithJson(api,accountname,isSupport,maxTweets=1000
         import pandas as pd
         import numpy as np
         import pickle
-        from connections import twitterapi
+        from keys import twitterapi
 
         tweetsPerQry = 100
         sinceId = None
@@ -205,7 +202,10 @@ def RunModel(tweetframe):
     list_corpus = tweetframe['text'].tolist()
     list_vectors = vectorizer.transform(list_corpus)
     predictions = myclf.predict(list_vectors)
-    return predictions
+    probabilities = myclf.predict_proba(list_vectors)
+    #tf['predictions'] = predictions
+    	#tf['probabilities'] = probabilities[:,1]
+    return predictions, probabilities
 
 def ExplainTweet(tweet):
     import pickle
@@ -230,12 +230,13 @@ def GetTopics(tweetframe):
     from sklearn.decomposition import NMF, LatentDirichletAllocation
 
     tweetframe = ProcessTweets(tweetframe)
+    print('The length of tweetframe',len(tweetframe))
     # NMF is able to use tf-idf
     tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2)
     #tfidf = tfidf_vectorizer.fit_transform(documents)
     #tfidf_feature_names = tfidf_vectorizer.get_feature_names()
 
-    no_topics = 10
+    no_topics = 20
 
     # Run NMF
     n_docs = 5
@@ -249,7 +250,8 @@ def GetTopics(tweetframe):
     nmf = NMF(n_components=no_topics, random_state=1, alpha=.1, l1_ratio=.5, init='nndsvd')
 
     nmf.fit(tfidf_tweets)
-    print(tweetframe.columns)
+    print('len of tweetlist is',len(tweetlist))
+    #print(tweetframe.columns)
     results = []
     for topic_idx, topic in enumerate(nmf.components_):
         featnames = (" ".join([feature_names[i]
@@ -262,7 +264,7 @@ def GetTopics(tweetframe):
             #print(doc_index)
             doc_dict['username']=tweetframe['username'].iloc[doc_index]
             doc_dict['id']=tweetframe['id'].iloc[doc_index]
-            doc_dict['text'] = tweetframe['text'].iloc[doc_index]
+            doc_dict['text'] = tweetframe['processed_text'].iloc[doc_index]
             doc_dict['feature_names'] = featnames
             topic_list.append(doc_dict)
         results.append(topic_list)
@@ -273,7 +275,7 @@ def ProcessTweets(tf):
     import pandas as pd
     import numpy as np
     import pickle
-    from connections import twitterapi, postgresconnect
+    from keys import twitterapi, postgresconnect
 
     import keras
     import nltk
@@ -424,7 +426,7 @@ def ProcessTweets(tf):
 
     def clean_text(df,text_field):
         # taken from 'How to Solve 90% of NLP Problems'
-        # remove links
+        # # remove links
         df[text_field] = df[text_field].str.replace(r"http\S+", "")
         df[text_field] = df[text_field].str.replace(r"http", "")
         # remove @ mentions
@@ -439,45 +441,75 @@ def ProcessTweets(tf):
 
         df[text_field] = df[text_field].str.lower()
         df[text_field] = df[text_field].apply(lambda x: expandContractions(x))
+
+        #
+        # df[text_field].str.replace(r"http\S+", "")
+        # df[text_field].str.replace(r"http", "")
+        # df[text_field].str.replace(r"https\S+", "")
+        # df[text_field].str.replace(r"https", "")
+        # # remove @ mentions
+        # df[text_field].str.replace(r"@\S+", "")
+        # #remove hashtags
+        # df[text_field].str.replace(r"#\S+", "")
+        # #remove weird characters
+        # df[text_field].str.replace(r"[^A-Za-z0-9(),!?@\'\`\"\_\n\(\)]", " ")
+        # df[text_field].str.replace(r"@", "at")
+        # df[text_field].str.replace(r"amp", "and")
+        #
+        #
+        # df[text_field].str.lower()
+        # df[text_field].apply(lambda x: expandContractions(x))
+        # drop short tweets
+        mask = df[text_field].str.len()>50
+        #print('The number of long strings is',len(df.loc[mask]))
+        df= df.loc[mask]
+        #print('The length of df is',len(df))
         df = df.fillna('')
         return df
 
+    #print(tf['text'][:5])
     tf = clean_text(tf,'text')
+    tf['text'].str.replace(r"https", "")
+    #print(tf['text'][:5])
+
+    #mask = tf['text'].str.len()>100
+    #print('The length of tf',len(tf))
     tf = (tf.drop_duplicates(subset='text'))
     tokenizer = RegexpTokenizer(r'\w+')
     tf.loc[:,"tokens"] = tf.loc[:,"text"].apply(tokenizer.tokenize)
 
-    data_words = tf['tokens'][:]
-
-
-    # Build the bigram and trigram models
-    bigram = gensim.models.Phrases(data_words, min_count=5, threshold=5) # higher threshold fewer phrases.
-    trigram = gensim.models.Phrases(bigram[data_words], threshold=5)
-
-    # Faster way to get a sentence clubbed as a trigram/bigram
-    bigram_mod = gensim.models.phrases.Phraser(bigram)
-    trigram_mod = gensim.models.phrases.Phraser(trigram)
-
-    # See trigram example
-    print(trigram_mod[bigram_mod[data_words[0:10]]])
-
-    def make_bigrams(texts):
-        return [bigram_mod[doc] for doc in texts]
-
-    def make_trigrams(texts):
-        return [trigram_mod[bigram_mod[doc]] for doc in texts]
+    # data_words = tf['tokens'][:]
+    #
+    #
+    # # Build the bigram and trigram models
+    # bigram = gensim.models.Phrases(data_words, min_count=5, threshold=5) # higher threshold fewer phrases.
+    # trigram = gensim.models.Phrases(bigram[data_words], threshold=5)
+    #
+    # # Faster way to get a sentence clubbed as a trigram/bigram
+    # bigram_mod = gensim.models.phrases.Phraser(bigram)
+    # trigram_mod = gensim.models.phrases.Phraser(trigram)
+    #
+    # # See trigram example
+    # #print(trigram_mod[bigram_mod[data_words[0:10]]])
+    #
+    # def make_bigrams(texts):
+    #     return [bigram_mod[doc] for doc in texts]
+    #
+    # def make_trigrams(texts):
+    #     return [trigram_mod[bigram_mod[doc]] for doc in texts]
 
     #tf['tokens'] = trigram_mod[bigram_mod[tf['tokens']]]
 
-    tf['tokens'] = bigram_mod[tf['tokens']]
+    # tf['tokens'] = bigram_mod[tf['tokens']]
 
     tf['processed_text'] = tf['tokens'].apply(' '.join)
 
 
     # Import stopwords with scikit-learn
     from sklearn.feature_extraction import text
-    stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s'])
+    stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s','ve','t'])
     tf['processed_text'] = tf['processed_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
     tf = (tf.drop_duplicates(subset='processed_text'))
-
+    print('The length of tf',len(tf))
+    print(tf['processed_text'][:3])
     return tf

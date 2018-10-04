@@ -7,6 +7,7 @@ from sqlalchemy_utils import database_exists, create_database
 import pandas as pd
 import psycopg2
 import importlib
+import keys
 import connections; importlib.reload(connections)
 import twitter
 #from connections import RetrieveSingleAccountTweetsWithJson,twitterapi
@@ -58,26 +59,55 @@ def squeaky_input():
 def squeaky_output():
 	#get Twitter account to categorize
 	twitter_account = request.args.get('twitter_account')
-	twitter_account = 'united'
-	#if request.method=='POST':
-	#	return redirect(url_for('topics',twitter_account = twitter_account))
-	api = connections.twitterapi()
-	pyapi = connections.pythontwitterapi()
-	tweetcount = 1000
-	tweetlist, tweetcount = connections.RetrieveSingleAccountTweetsWithJson(api,twitter_account,False,tweetcount)
-	tf = pd.DataFrame(tweetlist)
+
+	#connect to SQL database
+	engine,con = keys.postgresconnect('tweetdata')
+
+	runlocal = False
+	#if running locally, get tweets from SQL; otherwise get from Internet
+	if runlocal==True:
+		tf = pd.read_sql('united_demo_tweets',engine)
+		tf = tf.drop_duplicates()
+	else:
+		api = keys.twitterapi()
+		pyapi = keys.pythontwitterapi()
+		tweetcount = 300
+		tweetlist, tweetcount = connections.RetrieveSingleAccountTweetsWithJson(api,twitter_account,False,tweetcount)
+		tf = pd.DataFrame(tweetlist)
 	#print('columns'+tf.columns)
-	predictions = connections.RunModel(tf)
+	# number of tweets to return
+	n=20
+	predictions,probabilities = connections.RunModel(tf)
 	tf['predictions'] = predictions
+	tf['probabilities'] = probabilities[:,1]
 	numcomplaints = tf[tf['predictions']==1]['predictions'].count()
-	tweetjson = tf[tf['predictions']==1]['json'].tolist()
-	engine,con = connections.postgresconnect('tweetdata')
+
+
+	toptweets = tf.sort_values(by=['probabilities'],ascending=False)[:n]
+	toptweets['followers'] = 0
+	#tweetelements = toptweets.to_dict('records')
+
+	tweetjson = []
+
+	#print(toptweets.loc['probabilities',2])
+	for index,row in toptweets.iterrows():
+	    newdict = {}
+	    newdict['json'] = row['json']
+	    newdict['probabilities'] = '%.2f' % (row['probabilities'])
+	    user = api.get_user(row['username'])
+	    newdict['followers'] = user.followers_count
+	    tweetjson.append(newdict)
+
+	#tweetjson = toptweets[toptweets['predictions']==1]['json'].tolist()
+
 	tablename = twitter_account+'_demo_tweets'
 	tf_trim = tf.drop(['json','mentions'],axis=1)
 	tf_trim.to_sql(name=tablename,con=engine,if_exists='append')
 	results = connections.GetTopics(tf[tf['predictions']==1])
 
-	return render_template("squeakyoutput.html", numcomplaints = numcomplaints,tweettext=tweetjson,tweetcount=tweetcount,results=results)
+	return render_template("squeakyoutput.html", numcomplaints = numcomplaints,
+							tweettext=tweetjson,tweetcount=tweetcount,
+							results=results)
 
 @app.route('/topics/<twitter_account>')
 def squeaky_topics(twitter_account):

@@ -110,22 +110,27 @@ twttr.widgets.createTweet(
     </div> <!-- /.container-->
 
     <h3>{{numcomplaints}} complaints out of {{tweetcount}} tweets</h3>
+
     <p class="lead"><br> </p>
 
       <table class="table table-hover" align='center'>
       <tr><th>Complaints</th><!--<th>leftover code!</th><th>Birth Month</th></tr>-->
 <tr>
-      {% for tweet in tweettext[:3] %}
+
+    {% for tweet in tweettext[:3] %}
 
       <td>
+          <h5>Complaint/Query Probability: {{tweet['probabilities']}}</h5>
+          <h5>Followers: {{tweet['followers']}} </h5>
+
         <!--<h4>Followers:{{tweet['followers']}}</h4>-->
         <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
           <p lang="en" dir="ltr">
-            <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
+            <h4>{{tweet['json']['user']['screen_name']}}</h4> <i>{{tweet['json']['created_at']}}</i><br>
             <br>
-            {{ tweet['full_text'] }}
+            {{ tweet['json']['full_text'] }}
           </p>
-          <a href="https://twitter.com/{{tweet['user']['screen_name']}}/status/{{tweet['id_str']}}"></a>
+          <a href="https://twitter.com/{{tweet['json']['user']['screen_name']}}/status/{{tweet['json']['id_str']}}"></a>
         </blockquote>
       </td><!--<td></td><td> </td></tr>-->
       {% endfor %}
@@ -133,14 +138,16 @@ twttr.widgets.createTweet(
         {% for tweet in tweettext[3:6] %}
 
         <td>
-          <!--<h4>Followers:{{tweet['followers']}}</h4>-->
+          <h5>Complaint/Query Probability: {{tweet['probabilities']}}</h5>
+          <h5>Followers: {{tweet['followers']}} </h5>
+
           <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
             <p lang="en" dir="ltr">
-              <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
+              <h4>{{tweet['json']['user']['screen_name']}}</h4> <i>{{tweet['json']['created_at']}}</i><br>
               <br>
-              {{ tweet['full_text'] }}
+              {{ tweet['json']['full_text'] }}
             </p>
-            <a href="https://twitter.com/{{tweet['user']['screen_name']}}/status/{{tweet['id_str']}}"></a>
+            <a href="https://twitter.com/{{tweet['json']['user']['screen_name']}}/status/{{tweet['json']['id_str']}}"></a>
           </blockquote>
         </td><!--<td></td><td> </td></tr>-->
         {% endfor %}
@@ -148,14 +155,15 @@ twttr.widgets.createTweet(
           {% for tweet in tweettext[6:9] %}
 
           <td>
-            <!--<h4>Followers:{{tweet['followers']}}</h4>-->
+            <h5>Complaint/Query Probability: {{tweet['probabilities']}}</h5>
+            <h5>Followers: {{tweet['followers']}} </h5>
             <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
               <p lang="en" dir="ltr">
-                <h4>{{tweet['user']['screen_name']}}</h4> <i>{{tweet['created_at']}}</i><br>
+                <h4>{{tweet['json']['user']['screen_name']}}</h4> <i>{{tweet['json']['created_at']}}</i><br>
                 <br>
-                {{ tweet['full_text'] }}
+                {{ tweet['json']['full_text'] }}
               </p>
-              <a href="https://twitter.com/{{tweet['user']['screen_name']}}/status/{{tweet['id_str']}}"></a>
+              <a href="https://twitter.com/{{tweet['json']['user']['screen_name']}}/status/{{tweet['json']['id_str']}}"></a>
             </blockquote>
           </td><!--<td></td><td> </td></tr>-->
           {% endfor %}
@@ -193,7 +201,7 @@ twttr.widgets.createTweet(
             <a href="https://twitter.com/{{topictweet['username']}}/status/{{topictweet['id']}}"></a>
           </blockquote>
         </td><!--<td></td><td> </td></tr>-->
-        {%endfor%}
+        {% endfor %}
       </table>
   </div>
 
@@ -213,7 +221,7 @@ twttr.widgets.createTweet(
           <a href="https://twitter.com/{{topictweet['username']}}/status/{{topictweet['id']}}"></a>
         </blockquote>
       </td><!--<td></td><td> </td></tr>-->
-      {%endfor%}
+      {% endfor %}
     </table>
   </div>
 
@@ -235,7 +243,7 @@ twttr.widgets.createTweet(
         <a href="https://twitter.com/{{topictweet['username']}}/status/{{topictweet['id']}}"></a>
       </blockquote>
     </td><!--<td></td><td> </td></tr>-->
-    {%endfor%}
+    {% endfor %}
   </table>
   </div>
   </div>

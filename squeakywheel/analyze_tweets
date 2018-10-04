@@ -13,6 +13,7 @@ import numpy as np
 import re
 import codecs
 import textblob
+import seaborn as sns
 
 # Gensim
 import gensim
@@ -30,51 +31,55 @@ train_tweets = pd.read_csv('train_tweets.csv')
 
 train_tweets = (train_tweets.drop_duplicates(subset='text'))
 apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
-train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+#train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
 
 from nltk.tokenize import RegexpTokenizer
 
 
 
-    
-
-tokenizer = RegexpTokenizer(r'\w+')
-train_tweets.loc[:,"tokens"] = train_tweets.loc[:,"text"].apply(tokenizer.tokenize)
-
-data_words = train_tweets['tokens'][:]
-
-
-# Build the bigram and trigram models
-bigram = gensim.models.Phrases(data_words, min_count=5, threshold=5) # higher threshold fewer phrases.
-trigram = gensim.models.Phrases(bigram[data_words], threshold=5)  
-
-# Faster way to get a sentence clubbed as a trigram/bigram
-bigram_mod = gensim.models.phrases.Phraser(bigram)
-trigram_mod = gensim.models.phrases.Phraser(trigram)
-
-# See trigram example
-print(trigram_mod[bigram_mod[data_words[0:10]]])
-
-def make_bigrams(texts):
-    return [bigram_mod[doc] for doc in texts]
-
-def make_trigrams(texts):
-    return [trigram_mod[bigram_mod[doc]] for doc in texts]
-
-train_tweets['tokens'] = trigram_mod[bigram_mod[train_tweets['tokens']]]
-
-train_tweets['tokens'][:10]
-train_tweets['trigram_text'] = train_tweets['tokens'].apply(' '.join)
-train_tweets['trigram_text'][:10]
-
-# Import stopwords with scikit-learn
-from sklearn.feature_extraction import text
-stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s'])
-train_tweets['trigram_text'] = train_tweets['trigram_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
+#    
+#
+#tokenizer = RegexpTokenizer(r'\w+')
+#train_tweets.loc[:,"tokens"] = train_tweets.loc[:,"text"].apply(tokenizer.tokenize)
+#
+#data_words = train_tweets['tokens'][:]
+#
+#
+## Build the bigram and trigram models
+#bigram = gensim.models.Phrases(data_words, min_count=5, threshold=5) # higher threshold fewer phrases.
+#trigram = gensim.models.Phrases(bigram[data_words], threshold=5)  
+#
+## Faster way to get a sentence clubbed as a trigram/bigram
+#bigram_mod = gensim.models.phrases.Phraser(bigram)
+#trigram_mod = gensim.models.phrases.Phraser(trigram)
+#
+## See trigram example
+#print(trigram_mod[bigram_mod[data_words[0:10]]])
+#
+#def make_bigrams(texts):
+#    return [bigram_mod[doc] for doc in texts]
+#
+#def make_trigrams(texts):
+#    return [trigram_mod[bigram_mod[doc]] for doc in texts]
+#
+#train_tweets['tokens'] = trigram_mod[bigram_mod[train_tweets['tokens']]]
+#
+#train_tweets['tokens'][:10]
+#train_tweets['trigram_text'] = train_tweets['tokens'].apply(' '.join)
+#train_tweets['trigram_text'][:10]
+#
+## Import stopwords with scikit-learn
+#from sklearn.feature_extraction import text
+#stop = text.ENGLISH_STOP_WORDS.union(['amp','via','i_m','it_s'])
+#train_tweets['trigram_text'] = train_tweets['trigram_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in (stop)]))
 
 # randomize training and test corps
+
+train_tweets['trigram_text'] = train_tweets['processed_text']
 train_to_test_ratio = 4
 CorpTwitters = pd.read_csv('CorpTwittersAll.csv',names=['Main','Support','Sector'])
+CorpTwitters = CorpTwitters[~(CorpTwitters['Sector']=='mobile')]
+
 #ComplaintAccounts = CorpTwitters['Support'].apply(lambda x: x[1:].lower())
 #MainAccounts = CorpTwitters['Main'].apply(lambda x: x[1:].lower())
 CorpTwitters = CorpTwitters.iloc[:-1,:]
@@ -92,10 +97,50 @@ mask[randdex] = False
 TrainTwitters = CorpArray[mask,:]
 TrainTwitters = np.reshape(TrainTwitters[:,:2],ntrain*2)
 
+
+standard_sets = True
+if standard_sets == True:
+    TestTwitters = ['target',
+ 'asktarget',
+ 'honda',
+ 'hondacustsvc',
+ 'dropbox',
+ 'dropboxsupport',
+ 'ford',
+ 'fordservice',
+ 'dell',
+ 'dellcares']
+    TrainTwitters = ['walmart',
+ 'walmarthelp',
+ 'amazon',
+ 'amazonhelp',
+ 'microsoft',
+ 'microsofthelps',
+ 'fedex',
+ 'fedexhelp',
+ 'ups',
+ 'upshelp',
+ 'usps',
+ 'uspshelp',
+ 'linkedin',
+ 'linkedinhelp',
+ 'comcast',
+ 'comcastcares',
+ 'americanexpress',
+ 'askamex',
+ 'mastercard',
+ 'askmastercard',
+ 'visa',
+ 'askvisa',
+ 'spotify',
+ 'spotifycares',
+ 'nike',
+ 'nikesupport',
+ 'steam_games',
+ 'steamsupport']
+
 print(TestTwitters)
 print(TrainTwitters)
-
-
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -103,12 +148,12 @@ from sklearn.feature_extraction.text import TfidfTransformer
 
 
 # the \ ? in the string replace accounts for a typo in the list of corps
-train_tweets['source'] = train_tweets['source'].str.replace('@\ ?@','@')
+train_tweets['source'] = train_tweets['source'].str.replace('@','')
 train_tweets = train_tweets.dropna('rows','any')
 
 train_tweets = (train_tweets.drop_duplicates(subset='text'))
-apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
-train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+#apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+#train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
 
 
 def train_vectorize(tweetframe):
@@ -285,22 +330,76 @@ def show_most_informative_features(vect, clf, n=20):
     top = zip(coefs_with_fns[:n], coefs_with_fns[:-(n + 1):-1])
     for (coef_1, fn_1), (coef_2, fn_2) in top:
         print("\t%.4f\t%-15s\t\t%.4f\t%-15s" % (coef_1, fn_1, coef_2, fn_2))
+        
+model= clf
+vect = tfidf_vectorizer
+feature_names = vect.get_feature_names()
+        # loop for each class
+classes ={}
+n = 15
+for class_index in range(model.coef_.shape[0]):
+    word_importances = [(el, feature_names[i]) for i,el in enumerate(model.coef_[class_index])]
+    sorted_coeff = sorted(word_importances, key = lambda x : x[0], reverse=True)
+    tops = sorted(sorted_coeff[:n], key = lambda x : x[0])
+    bottom = sorted_coeff[-n:]
+    classes[class_index] = {
+        'tops':tops,
+        'bottom':bottom
+    }
+
+importance = classes
+
+top_scores = [11-a[0] for a in importance[0]['tops']]
+top_words = [a[1] for a in importance[0]['tops']]
+bottom_scores = [11-a[0] for a in importance[0]['bottom']]
+bottom_words = [a[1] for a in importance[0]['bottom']]
+
+def plot_important_words(top_scores, top_words, bottom_scores, bottom_words,name):
+    y_pos = np.arange(len(top_words))
+    top_pairs = [(a,b) for a,b in zip(top_words, top_scores)]
+    top_pairs = sorted(top_pairs, key=lambda x: x[1])
+
+    bottom_pairs = [(a,b) for a,b in zip(bottom_words, bottom_scores)]
+    bottom_pairs = sorted(bottom_pairs, key=lambda x: x[1], reverse=True)
+
+    top_words = [a[0] for a in top_pairs]
+    top_scores = [a[1] for a in top_pairs]
+
+    bottom_words = [a[0] for a in bottom_pairs]
+    bottom_scores = [a[1] for a in bottom_pairs]
+
+    fig,ax = plt.subplots(figsize=(8,10))  
+    
+    #plt.subplot(111)
+    sns.set_style('dark')
+    ax.barh(y_pos,top_scores, align='center',alpha=0.3,color='#0066ff')
+    #plt.title('Helpful', fontsize=20)
+    plt.yticks(y_pos, top_words, fontsize=25)
+    
+    #plt.title(name, fontsize=20)
+    ax.set_xticklabels([])
+    plt.subplots_adjust(left=0.6)
+    plt.show()
+
+
+plot_important_words(top_scores, top_words, bottom_scores, bottom_words,'Important Features')
+
 
 print(TestTwitters)
 print(TrainTwitters)
 show_most_informative_features(tfidf_vectorizer, clf, n=20)
 
 
-random_state = 1
-n_clusters = 5
-import matplotlib.colors as colors
-colors_={'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'}
-mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=random_state).fit(y_train)
-for this_centroid, k, col in zip(mbk.cluster_centers_,
-                     range(n_clusters), colors_):
-    #print(col)
-    mask = mbk.labels_ == k
-    plt.scatter(lsa_scores[mask, 0], lsa_scores[mask, 1], c=col)
+#random_state = 1
+#n_clusters = 5
+#import matplotlib.colors as colors
+#colors_={'tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan'}
+#mbk = MiniBatchKMeans(n_clusters=n_clusters, random_state=random_state).fit(y_train)
+#for this_centroid, k, col in zip(mbk.cluster_centers_,
+#                     range(n_clusters), colors_):
+#    #print(col)
+#    mask = mbk.labels_ == k
+#    plt.scatter(lsa_scores[mask, 0], lsa_scores[mask, 1], c=col)
     
 
 
