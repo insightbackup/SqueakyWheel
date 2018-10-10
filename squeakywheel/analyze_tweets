@@ -14,6 +14,7 @@ import re
 import codecs
 import textblob
 import seaborn as sns
+from matplotlib import pyplot as plt
 
 # Gensim
 import gensim
@@ -21,17 +22,17 @@ import gensim.corpora as corpora
 from gensim.utils import simple_preprocess
 from gensim.models import CoherenceModel
 
-
+plt.close('all')
 import warnings
 warnings.filterwarnings("ignore",category=DeprecationWarning)
 warnings.filterwarnings("ignore",category=UserWarning)
 
 
 train_tweets = pd.read_csv('train_tweets.csv')
+apple_tweets = train_tweets[train_tweets['source'].isin(['@@Apple','@@AppleSupport'])]
+#train_tweets = apple_tweets
 
 train_tweets = (train_tweets.drop_duplicates(subset='text'))
-apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
-#train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
 
 from nltk.tokenize import RegexpTokenizer
 
@@ -76,15 +77,21 @@ from nltk.tokenize import RegexpTokenizer
 # randomize training and test corps
 
 train_tweets['trigram_text'] = train_tweets['processed_text']
+train_tweets = train_tweets.dropna('rows',subset=['trigram_text'])
+
 train_to_test_ratio = 4
 CorpTwitters = pd.read_csv('CorpTwittersAll.csv',names=['Main','Support','Sector'])
-CorpTwitters = CorpTwitters[~(CorpTwitters['Sector']=='mobile')]
+#CorpTwitters = CorpTwitters[(CorpTwitters['Sector'].isin(['retail','delivery','web']))]
 
 #ComplaintAccounts = CorpTwitters['Support'].apply(lambda x: x[1:].lower())
 #MainAccounts = CorpTwitters['Main'].apply(lambda x: x[1:].lower())
 CorpTwitters = CorpTwitters.iloc[:-1,:]
 CorpTwitters['Main'] = CorpTwitters['Main'].str.lower()
 CorpTwitters['Support'] = CorpTwitters['Support'].str.lower()
+CorpTwitters['Main'] = CorpTwitters['Main'].str.replace('@\ ?@?','')
+CorpTwitters['Support'] = CorpTwitters['Support'].str.replace('@\ ?@?','')
+
+
 import random
 ntests = len(CorpTwitters)//train_to_test_ratio
 ntrain = len(CorpTwitters)-ntests
@@ -98,7 +105,8 @@ TrainTwitters = CorpArray[mask,:]
 TrainTwitters = np.reshape(TrainTwitters[:,:2],ntrain*2)
 
 
-standard_sets = True
+standard_sets = False
+single_source = False
 if standard_sets == True:
     TestTwitters = ['target',
  'asktarget',
@@ -139,20 +147,16 @@ if standard_sets == True:
  'steam_games',
  'steamsupport']
 
-print(TestTwitters)
-print(TrainTwitters)
+
 
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 
 
-# the \ ? in the string replace accounts for a typo in the list of corps
-train_tweets['source'] = train_tweets['source'].str.replace('@','')
-train_tweets = train_tweets.dropna('rows','any')
 
-train_tweets = (train_tweets.drop_duplicates(subset='text'))
-#apple_tweets = train_tweets[train_tweets['source'].isin(['@Apple','@AppleSupport'])]
+
+
 #train_tweets = train_tweets[~train_tweets['source'].isin(['@Apple','@AppleSupport'])]
 
 
@@ -170,16 +174,26 @@ def get_xy(subframe,vectorizer):
 
 tfidf_vectorizer = train_vectorize(train_tweets)
 
-test_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TestTwitters)]
-train_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TrainTwitters)]
 
-[X_train_counts,y_train] = get_xy(train_tweet_frame,tfidf_vectorizer)
-[X_test_counts,y_test] = get_xy(test_tweet_frame,tfidf_vectorizer)
+if single_source == True:
+    X,y = get_xy(train_tweets,tfidf_vectorizer)
+    X_train_counts,X_test_counts,y_train,y_test = train_test_split(X,y)
+    
+elif single_source==False:
+    print(TestTwitters)
+    print(TrainTwitters)
+    # the \ ? in the string replace accounts for a typo in the list of corps
+    train_tweets['source'] = train_tweets['source'].str.replace('@\ ?@?','')
+    train_tweets['source'] = train_tweets['source'].str.lower()
+    train_tweets = train_tweets.dropna('rows',subset=['trigram_text'])
+    
+    test_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TestTwitters)]
+    train_tweet_frame = train_tweets[(train_tweets['source'].str.lower()).isin(TrainTwitters)]
+    
+    [X_train_counts,y_train] = get_xy(train_tweet_frame,tfidf_vectorizer)
+    [X_test_counts,y_test] = get_xy(test_tweet_frame,tfidf_vectorizer)
 
-#X_train_counts = tfidf_vectorizer.transform(train_tweet_frame['trigram_text'].tolist())
-#y_train = train_tweet_frame['class_label'].tolist()
-#X_test_counts = tfidf_vectorizer.transform(test_tweet_frame['trigram_text'].tolist())
-#y_test = test_tweet_frame['class_label'].tolist()
+
 
 
 
@@ -225,7 +239,7 @@ print(modelname)
 clf = LogisticRegression(C=1.0, penalty='l2',class_weight='balanced', solver='liblinear', 
                           multi_class='ovr', random_state=40)
 clf.fit(X_train_counts, y_train)
-model_list.append([modelname,clf])
+#model_list.append([modelname,clf])
 
 from sklearn.metrics import roc_curve,roc_auc_score
 y_proba = clf.predict_proba(X_test_counts)[:,1]
@@ -245,18 +259,46 @@ plt.ylabel('True positive rate')
 plt.title('ROC curve')
 plt.show()
 #print(thresholds)
+print('ROC score is:')
 print(roc_auc_score(clf.predict(X_test_counts),y_test))
 
 
+from sklearn.metrics import average_precision_score
+average_precision = average_precision_score(y_test, y_proba)
+
+print('Average precision-recall score: {0:0.2f}'.format(
+      average_precision))
+
+from sklearn.metrics import precision_recall_curve
+from sklearn.utils.fixes import signature
+
+precision, recall, _ = precision_recall_curve(y_test, y_proba)
+
+# In matplotlib < 1.5, plt.fill_between does not have a 'step' argument
+step_kwargs = ({'step': 'post'}
+               if 'step' in signature(plt.fill_between).parameters
+               else {})
+plt.step(recall, precision, color='b', alpha=0.2,
+         where='post')
+plt.fill_between(recall, precision, alpha=0.2, color='b', **step_kwargs)
+
+plt.xlabel('Recall')
+plt.ylabel('Precision')
+plt.ylim([0.0, 1.05])
+plt.xlim([0.0, 1.0])
+plt.title('2-class Precision-Recall curve: AP={0:0.2f}'.format(
+          average_precision))
 
 
-from sklearn.naive_bayes import MultinomialNB
-modelname = 'Naive Bayes'
-print(modelname)
-#from sklearn.svm import SVC
-clf = MultinomialNB().fit(X_train_counts, y_train)
-#clf = SVC(kernel='linear').fit(X_train_counts, y_train)
-model_list.append([modelname,clf])
+
+
+#from sklearn.naive_bayes import MultinomialNB
+#modelname = 'Naive Bayes'
+#print(modelname)
+##from sklearn.svm import SVC
+#clf = MultinomialNB().fit(X_train_counts, y_train)
+##clf = SVC(kernel='linear').fit(X_train_counts, y_train)
+#model_list.append([modelname,clf])
 
 
 #modelname = 'Gradient Boosted Regression'
@@ -311,6 +353,11 @@ def get_metrics(y_test, y_predicted):
     # true positives + true negatives/ total
     accuracy = accuracy_score(y_test, y_predicted)
     return accuracy, precision, recall, f1
+
+y_predicted_counts = clf.predict(X_test_counts)
+
+accuracy, precision, recall, f1 = get_metrics(y_test, y_predicted_counts)
+print("accuracy = %.3f, precision = %.3f, recall = %.3f, f1 = %.3f" % (accuracy, precision, recall, f1))
 
 for name,clf in model_list:
     print(name)
@@ -385,8 +432,8 @@ def plot_important_words(top_scores, top_words, bottom_scores, bottom_words,name
 plot_important_words(top_scores, top_words, bottom_scores, bottom_words,'Important Features')
 
 
-print(TestTwitters)
-print(TrainTwitters)
+#print(TestTwitters)
+#print(TrainTwitters)
 show_most_informative_features(tfidf_vectorizer, clf, n=20)
 
 

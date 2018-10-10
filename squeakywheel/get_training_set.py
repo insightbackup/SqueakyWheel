@@ -14,8 +14,8 @@ def RetrieveSingleAccountTweets(api,accountname,isSupport,maxTweets=10000):
     import pandas as pd
     import numpy as np
     import pickle
-    from connections import twitterapi
-    from connections import postgresconnect
+    from keys import twitterapi
+    from keys import postgresconnect
 
     tweetsPerQry = 100
     sinceId = None
@@ -97,7 +97,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import time
-from connections import twitterapi, postgresconnect
+from keys import twitterapi, postgresconnect
 
 api = twitterapi()
 
@@ -124,7 +124,7 @@ for i in range(len(CorpTwitters)):
         account = CorpTwitters.loc[i,accounttype]
         atuser = '@'+account
         if accounttype=='Support':
-            type = 'complaint'
+            accounttype = 'complaint'
             complaintdict_list,tweetCount = RetrieveSingleAccountTweets(api,atuser,True,maxtweets)
             complaintlist.extend(complaintdict_list)
             maxtweets = tweetCount
@@ -132,7 +132,7 @@ for i in range(len(CorpTwitters)):
 
         elif accounttype=='Main':
             print(account,str(maxtweets))
-            type='neutral'
+            accounttype='neutral'
             neutraldict_list,tweetCount = RetrieveSingleAccountTweets(api,atuser,False,maxtweets)
             neutrallist.extend(neutraldict_list)
 
@@ -160,8 +160,15 @@ with open(storagefile,'wb') as picklefile:
 # with open(storagefile,'rb') as picklefile:
 #     complaintframe = pickle.load(picklefile)
 engine,con = postgresconnect('tweetdata')
+
+import json
+complaintframe['json'] = complaintframe['json'].apply(lambda x: json.dumps(x))
+neutralframe['json']=neutralframe['json'].apply(lambda x: json.dumps(x))
+complaintframe['mentions']=complaintframe['mentions'].apply(lambda x: json.dumps(x))
+neutralframe['mentions']=neutralframe['mentions'].apply(lambda x: json.dumps(x))
+
 complaintframe.to_sql('training_tweets',engine,if_exists='append')
-#neutralframe.to_sql('training_tweets',engine,if_exists='append')
+neutralframe.to_sql('training_tweets',engine,if_exists='append')
 
 
 

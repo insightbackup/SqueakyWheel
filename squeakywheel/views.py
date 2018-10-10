@@ -23,10 +23,7 @@ con = psycopg2.connect(database=dbname, user=user, host = host, password = passw
 @app.route('/')
 @app.route('/index')
 def index():
-	user= {'nickname':'Jane'} #fake user
-	return render_template("index.html",
-		title='Home',
-		user=user)
+    return render_template("squeakyinput.html")
 
 @app.route('/db')
 def info_stats():
@@ -71,7 +68,7 @@ def squeaky_output():
 	else:
 		api = keys.twitterapi()
 		pyapi = keys.pythontwitterapi()
-		tweetcount = 300
+		tweetcount = 500
 		tweetlist, tweetcount = connections.RetrieveSingleAccountTweetsWithJson(api,twitter_account,False,tweetcount)
 		tf = pd.DataFrame(tweetlist)
 	#print('columns'+tf.columns)
@@ -102,7 +99,7 @@ def squeaky_output():
 
 	tablename = twitter_account+'_demo_tweets'
 	tf_trim = tf.drop(['json','mentions'],axis=1)
-	tf_trim.to_sql(name=tablename,con=engine,if_exists='append')
+	#tf_trim.to_sql(name=tablename,con=engine,if_exists='append')
 	results = connections.GetTopics(tf[tf['predictions']==1])
 
 	return render_template("squeakyoutput.html", numcomplaints = numcomplaints,

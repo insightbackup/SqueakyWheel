@@ -120,8 +120,8 @@ twttr.widgets.createTweet(
     {% for tweet in tweettext[:3] %}
 
       <td>
-          <h5>Complaint/Query Probability: {{tweet['probabilities']}}</h5>
-          <h5>Followers: {{tweet['followers']}} </h5>
+          <h3>Complaint/Query Probability: {{tweet['probabilities']}}</h3>
+          <h3>Followers: {{tweet['followers']}} </h3>
 
         <!--<h4>Followers:{{tweet['followers']}}</h4>-->
         <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
@@ -138,8 +138,8 @@ twttr.widgets.createTweet(
         {% for tweet in tweettext[3:6] %}
 
         <td>
-          <h5>Complaint/Query Probability: {{tweet['probabilities']}}</h5>
-          <h5>Followers: {{tweet['followers']}} </h5>
+          <h3>Complaint/Query Probability: {{tweet['probabilities']}}</h3>
+          <h3>Followers: {{tweet['followers']}} </h3>
 
           <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
             <p lang="en" dir="ltr">
@@ -155,8 +155,8 @@ twttr.widgets.createTweet(
           {% for tweet in tweettext[6:9] %}
 
           <td>
-            <h5>Complaint/Query Probability: {{tweet['probabilities']}}</h5>
-            <h5>Followers: {{tweet['followers']}} </h5>
+            <h3>Complaint/Query Probability: {{tweet['probabilities']}}</h3>
+            <h3>Followers: {{tweet['followers']}} </h3>
             <blockquote class='twitter-tweet' data-conversation="none" align="center" data-cards="hidden">
               <p lang="en" dir="ltr">
                 <h4>{{tweet['json']['user']['screen_name']}}</h4> <i>{{tweet['json']['created_at']}}</i><br>
@@ -183,7 +183,8 @@ twttr.widgets.createTweet(
 
         People are complaining about:
         <div class="row">
-        <div class="col-sm">
+        <div class='col-sm-10'>
+        <div class="col-sm-3">
 
         <table class="table" >
         <tr><th><h4>Topic 1:<br>{{results[0][0]['feature_names']}}</h4></th>
@@ -205,7 +206,7 @@ twttr.widgets.createTweet(
       </table>
   </div>
 
-  <div class ="col-sm">
+  <div class ="col-sm-3">
       <table class="table" >
       <tr>  <th><h4>Topic 2:<br>{{results[1][0]['feature_names']}}</h4></th>
       {%for topictweet in results[1]%}
@@ -227,7 +228,7 @@ twttr.widgets.createTweet(
 
 
 
-  <div class="col-sm">
+  <div class="col-sm-3">
     <table class="table" >
       <tr><th><h4>Topic 3:<br>{{results[2][0]['feature_names']}}</h4></th>
     {%for topictweet in results[2]%}
@@ -247,6 +248,7 @@ twttr.widgets.createTweet(
   </table>
   </div>
   </div>
+</div>
 
 
 

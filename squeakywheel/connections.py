@@ -270,6 +270,9 @@ def GetTopics(tweetframe):
         results.append(topic_list)
     return results
 
+def GetTopicsGensim(tweetframe):
+    
+
 def ProcessTweets(tf):
     import tweepy
     import pandas as pd

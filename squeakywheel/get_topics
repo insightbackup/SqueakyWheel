@@ -14,6 +14,7 @@ from sklearn.decomposition import NMF, LatentDirichletAllocation
 from nltk.tokenize import RegexpTokenizer
 from nltk.tokenize import TreebankWordTokenizer
 from nltk.tokenize.casual import TweetTokenizer
+import ast
 
 n_docs = 5
 def display_topics(model, feature_names, no_top_words,documents,ids,tfidf):
@@ -33,55 +34,90 @@ def display_topics(model, feature_names, no_top_words,documents,ids,tfidf):
 all_tweets = pd.read_csv('train_tweets.csv')
 all_tweets = all_tweets.dropna('rows','any') 
 
-i=6
+i=2
 
 sources = all_tweets['source'].unique().tolist()
 source= sources[i]
 print(source)
 topic_tweets = all_tweets[all_tweets['source']==source]['processed_text'].tolist()
 
+tokenizer = RegexpTokenizer(r'\w+')
+all_tweets["tokens"] = all_tweets["processed_text"].apply(tokenizer.tokenize)
+
 ids = all_tweets[all_tweets['source']==source]['class_label'].tolist()
+n=9
+#tokens = [ast.literal_eval(stringlist) for stringlist in all_tweets[all_tweets['source']==source]['tokens'].tolist()]
+tokens = [stringlist for stringlist in all_tweets[all_tweets['source']==source]['tokens'].tolist()]
 
-no_features = 1000
+token_tweets =  [val for sublist in tokens for val in sublist]
+from gensim.corpora.dictionary import Dictionary
+import gensim
+#id2word = Dictionary(tokens)
+tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2,  stop_words='english')
+id2word = tf_vectorizer.fit(topic_tweets)
+corpus_vect = tf_vectorizer.transform(topic_tweets)
+corpus = gensim.matutils.Sparse2Corpus(corpus_vect, documents_columns=False)
 
-
-#for i in range(len(topic_tweets)):
-#    topic_tweets[i] = expandContractions(topic_tweets[i])
-
-documents = topic_tweets
-# NMF is able to use tf-idf
-tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2)
-tfidf = tfidf_vectorizer.fit_transform(documents)
-tfidf_feature_names = tfidf_vectorizer.get_feature_names()
-
-# LDA can only use raw term counts for LDA because it is a probabilistic graphical model
-#tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2,  stop_words='english')
-#tf = tf_vectorizer.fit_transform(documents)
-#tf_feature_names = tf_vectorizer.get_feature_names()
-
-no_topics = 15
-
-# Run NMF
-nmf = NMF(n_components=no_topics, random_state=1, alpha=.1, l1_ratio=.5, init='nndsvd').fit(tfidf)
-n_top_documents = 5
-n_top_words = 5
-# get list of feature names
-feature_names = tfidf_vectorizer.get_feature_names()
-#for topic_id, topic in enumerate(nmf.components_):
-        #word_list = []
-        #for i in topic.argsort()[:-n_top_words - 1:-1]:
-        #    word_list.append(feature_names[i])
-            
-
-            # check that the review contains one of the topic words
-            #if any(word in df['reviewText'].iloc[doc_index].lower() for word in topic_words):
-
-# Run LDA
-#lda = LatentDirichletAllocation(n_topics=no_topics, max_iter=5, learning_method='online', learning_offset=50.,random_state=0).fit(tf)
-
-no_top_words = 5
-display_topics(nmf, tfidf_feature_names, no_top_words,documents,ids,tfidf)
-#display_topics(lda, tf_feature_names, no_top_words)
+#transform scikit vocabulary into gensim dictionary
+vocabulary_gensim = {}
+for key, val in tf_vectorizer.vocabulary_.items():
+    vocabulary_gensim[val] = key
 
 
 
+
+#common_corpus = [id2word.doc2bow(text) for text in topic_tweets]
+lda = gensim.models.ldamodel.LdaModel(corpus=corpus, id2word=vocabulary_gensim, num_topics=n, update_every=1, chunksize=10000, passes=1)
+print(lda.print_topics(n))
+tf_feature_names = tf_vectorizer.get_feature_names()
+
+display_topics(lda,tf_feature_names,5,topic_tweets,ids,corpus_vect)
+
+#
+# # Train the model on the corpus.
+##lda = LdaModel(common_corpus, num_topics=10)
+#
+#
+#no_features = 1000
+#
+#
+##for i in range(len(topic_tweets)):
+##    topic_tweets[i] = expandContractions(topic_tweets[i])
+#
+#documents = topic_tweets
+## NMF is able to use tf-idf
+#tfidf_vectorizer = TfidfVectorizer(max_df=0.95, min_df=2)
+#tfidf = tfidf_vectorizer.fit_transform(documents)
+#tfidf_feature_names = tfidf_vectorizer.get_feature_names()
+#
+## LDA can only use raw term counts for LDA because it is a probabilistic graphical model
+##tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2,  stop_words='english')
+##tf = tf_vectorizer.fit_transform(documents)
+##tf_feature_names = tf_vectorizer.get_feature_names()
+#
+#no_topics = 15
+#
+## Run NMF
+#nmf = NMF(n_components=no_topics, random_state=1, alpha=.1, l1_ratio=.5, init='nndsvd').fit(tfidf)
+#n_top_documents = 5
+#n_top_words = 5
+## get list of feature names
+#feature_names = tfidf_vectorizer.get_feature_names()
+##for topic_id, topic in enumerate(nmf.components_):
+#        #word_list = []
+#        #for i in topic.argsort()[:-n_top_words - 1:-1]:
+#        #    word_list.append(feature_names[i])
+#            
+#
+#            # check that the review contains one of the topic words
+#            #if any(word in df['reviewText'].iloc[doc_index].lower() for word in topic_words):
+#
+## Run LDA
+##lda = LatentDirichletAllocation(n_topics=no_topics, max_iter=5, learning_method='online', learning_offset=50.,random_state=0).fit(tf)
+#
+#no_top_words = 5
+#display_topics(nmf, tfidf_feature_names, no_top_words,documents,ids,tfidf)
+##display_topics(lda, tf_feature_names, no_top_words)
+#
+#
+#
