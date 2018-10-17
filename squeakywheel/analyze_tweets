@@ -15,6 +15,27 @@ import codecs
 import textblob
 import seaborn as sns
 from matplotlib import pyplot as plt
+import warnings
+from nltk.tokenize import RegexpTokenizer
+
+#sklearn
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.decomposition import PCA, TruncatedSVD
+import matplotlib
+import matplotlib.patches as mpatches
+from matplotlib import pyplot as plt
+from sklearn import cluster, datasets, mixture 
+from sklearn.neighbors import kneighbors_graph 
+from sklearn.preprocessing import StandardScaler 
+from itertools import cycle, islice
+from sklearn.decomposition import PCA, TruncatedSVD
+import matplotlib
+import matplotlib.patches as mpatches
+from matplotlib import pyplot as plt
+from sklearn.cluster import MiniBatchKMeans
 
 # Gensim
 import gensim
@@ -22,8 +43,10 @@ import gensim.corpora as corpora
 from gensim.utils import simple_preprocess
 from gensim.models import CoherenceModel
 
+import random
+
 plt.close('all')
-import warnings
+
 warnings.filterwarnings("ignore",category=DeprecationWarning)
 warnings.filterwarnings("ignore",category=UserWarning)
 
@@ -34,7 +57,7 @@ apple_tweets = train_tweets[train_tweets['source'].isin(['@@Apple','@@AppleSuppo
 
 train_tweets = (train_tweets.drop_duplicates(subset='text'))
 
-from nltk.tokenize import RegexpTokenizer
+
 
 
 
@@ -92,7 +115,7 @@ CorpTwitters['Main'] = CorpTwitters['Main'].str.replace('@\ ?@?','')
 CorpTwitters['Support'] = CorpTwitters['Support'].str.replace('@\ ?@?','')
 
 
-import random
+
 ntests = len(CorpTwitters)//train_to_test_ratio
 ntrain = len(CorpTwitters)-ntests
 randdex = random.sample(range(len(CorpTwitters)),ntests)
@@ -149,9 +172,6 @@ if standard_sets == True:
 
 
 
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
-from sklearn.feature_extraction.text import TfidfTransformer
 
 
 
@@ -197,19 +217,7 @@ elif single_source==False:
 
 
 
-from sklearn.decomposition import PCA, TruncatedSVD
-import matplotlib
-import matplotlib.patches as mpatches
-from matplotlib import pyplot as plt
-from sklearn import cluster, datasets, mixture 
-from sklearn.neighbors import kneighbors_graph 
-from sklearn.preprocessing import StandardScaler 
-from itertools import cycle, islice
-from sklearn.decomposition import PCA, TruncatedSVD
-import matplotlib
-import matplotlib.patches as mpatches
-from matplotlib import pyplot as plt
-from sklearn.cluster import MiniBatchKMeans
+
 
 
 def plot_LSA(test_data, test_labels, savepath="PCA_demo.csv", plot=True):

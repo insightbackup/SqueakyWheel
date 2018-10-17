@@ -8,20 +8,29 @@ Created on Tue Sep 18 10:15:47 2018
 
 
 def GetTestSet(atuser,maxtweets):
+    '''I wrote this function to get tweets for 'Test Sets' that I went through and
+    hand-labeled. It's largely similar to other GetTweets functions, I should probably
+    combine functionality somewhere.'''
+    import time
+
+    # max tweets to return
     maxtweets = 250
+
+    # make sure the username is properly formatted
     if not atuser[0]=='@':
         atuser = '@'+ atuser
-    import time
+
+    #filter retweets and replies
     retweet_filter='-filter:retweets'
     reply_filter = '-filter:replies'
+
+    # assemble the search query that will be passed to the Twitter API
     searchQuery = atuser+' AND '+retweet_filter+' AND '+reply_filter+' AND lang:en'# + 'AND until:2018-09-11'
-    print(searchQuery)
-    #storagefile = type+'tweets'+time.strftime("%Y%m%d-%H%M%S")+'.dat'
+
+
     storagefile = 'testtweetfile.dat'
     tweetCount = RetrieveTweets(searchQuery,storagefile,maxtweets)
     maxtweets = tweetCount
-    #import shutil
-    #shutil.copy(storagefile,type+'tweets.dat')
 
     testpickle = open('testtweetfile.dat','rb')
     testtweets = pickle.load(testpickle)
@@ -41,6 +50,8 @@ def GetTestSet(atuser,maxtweets):
         testframe.at[i,'choose_one']=''
         testframe.at[i,'class_label']=2
         i+=1
+
+    # why am I storing this as a CSV file as well as a dat?
     csv_name = 'test_tweets.csv'
     testframe.to_csv(csv_name)
     return csv_name
@@ -56,26 +67,41 @@ def RetrieveTweets(searchQuery,storagefile,maxTweets=10000):
     import pickle
     from keys import twitterapi
 
+    # 100 is the max number of tweets per query
     tweetsPerQry = 100
+
+    # if you run this several times and don't want to duplicate tweets, sinceId
+    # is the ID of the tweet you finished with last time, e.g. the tweet just
+    # before the earliest tweet you want to retrieve
     sinceId = None
 
-
-
+    # max_id is the opposite of sinceId--the ID of the latest tweet you want
+    # to retrieve
     max_id = -1
 
+    #initialize counters for total retrieved tweets and intermediate progress
+    # updates
     tweetCount = 0
     tweetProgress = 0
-    #fName = 'tweetlist.txt'
-    #with open(fName, 'w') as fname:
+
+
+    # initialize list; currently returning the tweets as a list of dicts/json is
+    # working best for my purposes
     list_of_tweets = []
+
+
     while tweetCount < maxTweets:
+        #note: tweet_mode = "extended" ensures that tweet text is not abridged
             try:
+                # we're iterating backwards through the search, so we start with
+                # no max_id
                 if (max_id <= 0):
                     if (not sinceId):
                         new_tweets = api.search(q=searchQuery, count=tweetsPerQry, tweet_mode='extended')
                     else:
                         new_tweets = api.search(q=searchQuery, count=tweetsPerQry,
                                                 since_id=sinceId)
+                # if the max_id is set, only get tweets from before it
                 else:
                     if (not sinceId):
                         new_tweets = api.search(q=searchQuery, count=tweetsPerQry,
@@ -92,6 +118,7 @@ def RetrieveTweets(searchQuery,storagefile,maxTweets=10000):
                     list_of_tweets.append(tweet._json)
                 tweetCount += len(new_tweets)
                 if tweetCount//1000>tweetProgress:
+                    # progress counter
                     print("Downloaded {0} tweets".format(tweetCount))
                     tweetProgress+=1
                 max_id = new_tweets[-1].id
@@ -100,12 +127,19 @@ def RetrieveTweets(searchQuery,storagefile,maxTweets=10000):
                 print("some error : " + str(e))
                 break
 
+    # store the tweets in a pickle file
     picklefile = open(storagefile,'wb')
     pickle.dump(list_of_tweets,picklefile)
     picklefile.close()
     return tweetCount
 
 def RetrieveSingleAccountTweetsWithJson(api,accountname,isSupport,maxTweets=10000):
+        '''Very similar to RetrieveTweets, if I had time I would just combine them.
+        Differences:
+            Returns a dataframe instead of the tweet count
+            Constructs its own search query from the account name
+            Separates out the Tweet data much more granularly
+            '''
         # the below code draws from
         # https://stackoverflow.com/questions/38555191/get-all-twitter-mentions-using-tweepy-for-users-with-millions-of-followers
 
@@ -190,6 +224,9 @@ def RetrieveSingleAccountTweetsWithJson(api,accountname,isSupport,maxTweets=1000
         return tweetdict_list,tweetCount
 
 def RunModel(tweetframe):
+    '''Runs the trained logistic regression model on the given Pandas
+    dataframe full of tweets; returns predicted results and their
+    probabilities'''
     import pickle
     import os
     #os.chdir('/home/rcarns/flaskapps/squeakywheel/')
@@ -270,8 +307,8 @@ def GetTopics(tweetframe):
         results.append(topic_list)
     return results
 
-def GetTopicsGensim(tweetframe):
-    
+#def GetTopicsGensim(tweetframe):
+
 
 def ProcessTweets(tf):
     import tweepy
